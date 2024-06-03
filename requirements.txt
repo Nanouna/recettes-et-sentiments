@@ -1,3 +1,10 @@
-pandas
-scikit-learn
 tensorflow
+pytest
+pylint
+ipdb
+jupyterlab
+numpy
+pandas
+matplotlib
+seaborn
+scikit-learn
