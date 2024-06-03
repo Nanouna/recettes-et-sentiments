@@ -1,0 +1,5 @@
+# core libs
+numpy
+pandas
+scikit-learn
+tensorflow

@@ -1,0 +1,9 @@
+setup.py
+./api_model/__init__.py
+./api_model/data.py
+./api_model/preprocessing.py
+recettes_et_sentiments.egg-info/PKG-INFO
+recettes_et_sentiments.egg-info/SOURCES.txt
+recettes_et_sentiments.egg-info/dependency_links.txt
+recettes_et_sentiments.egg-info/requires.txt
+recettes_et_sentiments.egg-info/top_level.txt
