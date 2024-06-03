@@ -1,0 +1,6 @@
+pytest
+pylint
+ipdb
+jupyterlab
+matplotlib
+seaborn
