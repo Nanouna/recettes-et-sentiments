@@ -2,8 +2,10 @@ import pandas as pd
 import string
 import typing
 
-from nltk import word_tokenize
+from nltk import word_tokenize, pos_tag
 from nltk.stem import WordNetLemmatizer
+from nltk.corpus import wordnet as wn
+
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfVectorizer
 
@@ -94,8 +96,8 @@ def basic_preprocess_recipe(df: pd.DataFrame) -> pd.DataFrame:
 def count_vectorize(
     df:pd.DataFrame,
     column_name:str,
-    min_df:float=1.0,
-    max_df:float=1.0,
+    min_df:float=0.1,
+    max_df:float=0.95,
     max_features:int=None,
     ngram_range=(1,1)
     )->pd.DataFrame:
@@ -104,6 +106,8 @@ def count_vectorize(
     CountVectorize the text in column column_name and add to the Data Frame the new columns
     df = count_vectorize(df, 'clean_txt')
 
+    Note : defaults for min_df/max_df are not 1.0/1.0 as it fails right away
+
     Args:
         df (pd.DataFrame): DataFrame in which there is a preprocessed text column to be vectorized
         colum_name (str) : name of the column that contains the text to CountVectorize
@@ -111,7 +115,23 @@ def count_vectorize(
     Returns:
         pd.DataFrame
 
+    Raises :
+        ValueError : column name is not in the dataFrame, the column has NaN,
+                     min_df/max_df are outside of 0-1.0 range
+
     """
+
+    if column_name not in df.columns:
+        raise ValueError(f"Column '{column_name}' not found in DataFrame")
+
+    if df[column_name].isnull().sum() > 0:
+        raise ValueError(f"Column '{column_name}' contains NaN values")
+
+    if 0 < min_df > 1.0:
+        raise ValueError(f"min_df '{min_df}' is not between 0 & 1.0")
+
+    if 0 < max_df > 1.0:
+        raise ValueError(f"max_df '{max_df}' is not between 0 & 1.0")
 
     count_vectorizer = CountVectorizer(
         min_df=min_df,
@@ -121,21 +141,23 @@ def count_vectorize(
         )
 
     X = count_vectorizer.fit_transform(df[column_name])
-    X_df = pd.DataFrame(X.toarray(), columns = count_vectorizer.get_feature_names_out())
+    X_df = pd.DataFrame(X.toarray(), columns = count_vectorizer.get_feature_names_out(), index=df.index)
 
     return pd.concat([df, X_df], axis = 1)
 
 def tfidf_vectorize(
     df:pd.DataFrame,
     column_name:str,
-    min_df:float=1.0,
-    max_df:float=1.0,
+    min_df:float=0.1,
+    max_df:float=0.95,
     max_features:int=None,
     ngram_range=(1,1))->pd.DataFrame:
     """
     usage :
     TFIDF Vectorize the text in column column_name and add to the Data Frame the new columns
     df = tfidf_vectorize(df, 'clean_txt')
+
+    Note : defaults for min_df/max_df are not 1.0/1.0 as it fails right away
 
     Args:
         df (pd.DataFrame): DataFrame in which there is a preprocessed text column to be vectorized
@@ -144,7 +166,23 @@ def tfidf_vectorize(
     Returns:
         pd.DataFrame
 
+    ValueError : column name is not in the dataFrame, the column has NaN,
+                min_df/max_df are outside of 0-1.0 range
+
     """
+
+    if column_name not in df.columns:
+        raise ValueError(f"Column '{column_name}' not found in DataFrame")
+
+    if df[column_name].isnull().sum() > 0:
+        raise ValueError(f"Column '{column_name}' contains NaN values")
+
+    if 0 < min_df > 1.0:
+        raise ValueError(f"min_df '{min_df}' is not between 0 & 1.0")
+
+    if 0 < max_df > 1.0:
+        raise ValueError(f"max_df '{max_df}' is not between 0 & 1.0")
+
     tf_idf_vectorizer = TfidfVectorizer(
         min_df=min_df,
         max_df=max_df,
@@ -153,6 +191,6 @@ def tfidf_vectorize(
         )
 
     X = tf_idf_vectorizer.fit_transform(df[column_name])
-    X_df = pd.DataFrame(X.toarray(), columns = tf_idf_vectorizer.get_feature_names_out())
+    X_df = pd.DataFrame(X.toarray(), columns = tf_idf_vectorizer.get_feature_names_out(), index=df.index)
 
     return pd.concat([df, X_df], axis = 1)
