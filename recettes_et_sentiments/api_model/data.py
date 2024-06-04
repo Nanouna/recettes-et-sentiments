@@ -51,10 +51,7 @@ def add_columns_and_merge_text(df:pd.DataFrame) -> pd.DataFrame:
 
     # merge list of steps as one string
     df['merged_steps'] = df['steps'].apply(lambda steps: "\n".join(steps))
-<<<<<<< Updated upstream
-=======
     df['ingredients'] = df['steps'].apply(lambda steps: "\n".join(steps))
->>>>>>> Stashed changes
     # df['merged_steps_length'] = df['merged_steps'].apply(lambda x:len(x))
 
     # drop redundant columns
