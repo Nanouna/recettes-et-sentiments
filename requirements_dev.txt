@@ -4,3 +4,4 @@ ipdb
 jupyterlab
 matplotlib
 seaborn
+nltk

@@ -1,31 +1,54 @@
 import pandas as pd
-import ast
+import string
+import typing
+
+from nltk import word_tokenize
+from nltk.stem import WordNetLemmatizer
+from recettes_et_sentiments.api_model import parameters
 
 
-def ping():
-    return "pong"
+# classic NLP preprocessing
+def remove_punctuation(text:str) -> str:
+    for punctuation in string.punctuation:
+        text = text.replace(punctuation, ' ')
+    return text
+
+def lowercase(text:str) -> str:
+    lowercased = text.lower()
+    return lowercased
+
+def remove_numbers(text:str) -> str:
+    words_only = ''.join([i for i in text if not i.isdigit()])
+    return words_only
+
+def remove_stopwords(text:str) -> typing.List[str]:
+    tokenized = word_tokenize(text)
+    without_stopwords = [word for word in tokenized if not word in parameters.STOP_WORDS]
+    return without_stopwords
+
+def lemma(text: typing.List[str])-> str:
+    lemmatizer = WordNetLemmatizer()
+    lemmatized = [lemmatizer.lemmatize(word) for word in text]
+    lemmatized_string = " ".join(lemmatized)
+    return lemmatized_string
+
+def basic_word_processing(text:str) -> str:
+    text = remove_punctuation(text)
+    text = lowercase(text)
+    text = remove_numbers(text)
+    text = remove_stopwords(text)
+    text = lemma(text)
+    return text
 
 
-def convert_column_to_list(column):
-    return column.apply(ast.literal_eval)
-
-
-def add_columns_and_merge_text(df:pd.DataFrame) -> pd.DataFrame:
-
-    # set id as column
-    df.set_index('id', inplace=True)
-
-    df['tags'] = convert_column_to_list(df['tags'])
-    df['nutrition'] = convert_column_to_list(df['nutrition'])
-    df['steps'] = convert_column_to_list(df['steps'])
-    df['ingredients'] = convert_column_to_list(df['ingredients'])
-
-    nutrition_columns = ['calories', 'total_fat_pdv', 'sugar_pdv', 'sodium_pdv', 'protein_pdv', 'saturated_fat_pdv', 'carbohydrates_pdv']
-    df[nutrition_columns] = pd.DataFrame(df['nutrition'].tolist(), index=df.index)
-
-    df['merged_steps'] = df['steps'].apply(lambda steps: "\n".join(steps))
-    df['merged_steps_length'] = df['merged_steps'].apply(lambda x:len(x))
-
-    # df['steps_merged_length'] =
-
+# Recipe basic preprocessing
+def basic_preprocess_recipe(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.copy()
+    recipe_text_columns = [
+        'name',
+        'description',
+        'merged_steps'
+    ]
+    for col in recipe_text_columns:
+        df[col] = df[col].apply(basic_word_processing)
     return df
