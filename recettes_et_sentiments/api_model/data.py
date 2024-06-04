@@ -26,6 +26,7 @@ def add_columns_and_merge_text(df:pd.DataFrame) -> pd.DataFrame:
 
     return dataframe
     '''
+
     # let's copy the df to be able to reload the function without missing column 'id' error
     df = df.copy()
     # set id as column
@@ -51,10 +52,10 @@ def add_columns_and_merge_text(df:pd.DataFrame) -> pd.DataFrame:
 
     # merge list of steps as one string
     df['merged_steps'] = df['steps'].apply(lambda steps: "\n".join(steps))
-    df['ingredients'] = df['steps'].apply(lambda steps: "\n".join(steps))
-    # df['merged_steps_length'] = df['merged_steps'].apply(lambda x:len(x))
+    df['merged_ingredients'] = df['ingredients'].apply(lambda steps: "\n".join(steps))
+
 
     # drop redundant columns
-    df.drop(columns={'nutrition', 'steps'}, inplace=True)
+    df.drop(columns={'nutrition', 'steps', 'ingredients'}, inplace=True)
 
     return df

@@ -4,6 +4,9 @@ import typing
 
 from nltk import word_tokenize
 from nltk.stem import WordNetLemmatizer
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.feature_extraction.text import TfidfVectorizer
+
 from recettes_et_sentiments.api_model import parameters
 
 
@@ -21,16 +24,43 @@ def remove_numbers(text:str) -> str:
     words_only = ''.join([i for i in text if not i.isdigit()])
     return words_only
 
-def remove_stopwords(text:str) -> typing.List[str]:
+def remove_stopwords(text:str) -> str:
     tokenized = word_tokenize(text)
     without_stopwords = [word for word in tokenized if not word in parameters.STOP_WORDS]
-    return without_stopwords
+    return ' '.join(without_stopwords)
 
-def lemma(text: typing.List[str])-> str:
+def lemma(text:str)->str:
+    """
+    Return the lemmatize "text"
+
+    Args:
+        text (str): text to be processed. Text should have been preprocessed (lowercase, ponctuation removed, stopwords removed)
+
+    Returns:
+        str: the input text without stop words
+    """
+    def get_wordnet_pos(treebank_tag):
+        if treebank_tag.startswith('J'):
+            return wn.ADJ
+        elif treebank_tag.startswith('V'):
+            return wn.VERB
+        elif treebank_tag.startswith('N'):
+            return wn.NOUN
+        elif treebank_tag.startswith('R'):
+            return wn.ADV
+        else:
+            return wn.NOUN  # Par défaut, retourne NOM
+
+    tokens = word_tokenize(text)
+    pos_tags = pos_tag(tokens)
+
     lemmatizer = WordNetLemmatizer()
-    lemmatized = [lemmatizer.lemmatize(word) for word in text]
-    lemmatized_string = " ".join(lemmatized)
-    return lemmatized_string
+
+    lemmatized_tokens = [lemmatizer.lemmatize(token, get_wordnet_pos(pos)) for token, pos in pos_tags]
+
+    return ' '.join(lemmatized_tokens)
+
+
 
 def basic_word_processing(text:str) -> str:
     text = remove_punctuation(text)
@@ -59,4 +89,70 @@ def basic_preprocess_recipe(df: pd.DataFrame) -> pd.DataFrame:
     ]
     for col in recipe_text_columns:
         df[col] = df[col].apply(basic_word_processing)
-    return df
+        return df
+
+def count_vectorize(
+    df:pd.DataFrame,
+    column_name:str,
+    min_df:float=1.0,
+    max_df:float=1.0,
+    max_features:int=None,
+    ngram_range=(1,1)
+    )->pd.DataFrame:
+    """
+    usage :
+    CountVectorize the text in column column_name and add to the Data Frame the new columns
+    df = count_vectorize(df, 'clean_txt')
+
+    Args:
+        df (pd.DataFrame): DataFrame in which there is a preprocessed text column to be vectorized
+        colum_name (str) : name of the column that contains the text to CountVectorize
+
+    Returns:
+        pd.DataFrame
+
+    """
+
+    count_vectorizer = CountVectorizer(
+        min_df=min_df,
+        max_df=max_df,
+        max_features=max_features,
+        ngram_range=ngram_range
+        )
+
+    X = count_vectorizer.fit_transform(df[column_name])
+    X_df = pd.DataFrame(X.toarray(), columns = count_vectorizer.get_feature_names_out())
+
+    return pd.concat([df, X_df], axis = 1)
+
+def tfidf_vectorize(
+    df:pd.DataFrame,
+    column_name:str,
+    min_df:float=1.0,
+    max_df:float=1.0,
+    max_features:int=None,
+    ngram_range=(1,1))->pd.DataFrame:
+    """
+    usage :
+    TFIDF Vectorize the text in column column_name and add to the Data Frame the new columns
+    df = tfidf_vectorize(df, 'clean_txt')
+
+    Args:
+        df (pd.DataFrame): DataFrame in which there is a preprocessed text column to be vectorized
+        colum_name (str) : name of the column that contains the text to Vectorize
+
+    Returns:
+        pd.DataFrame
+
+    """
+    tf_idf_vectorizer = TfidfVectorizer(
+        min_df=min_df,
+        max_df=max_df,
+        max_features=max_features,
+        ngram_range=ngram_range
+        )
+
+    X = tf_idf_vectorizer.fit_transform(df[column_name])
+    X_df = pd.DataFrame(X.toarray(), columns = tf_idf_vectorizer.get_feature_names_out())
+
+    return pd.concat([df, X_df], axis = 1)
