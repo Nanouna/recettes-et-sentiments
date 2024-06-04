@@ -42,12 +42,27 @@ def basic_word_processing(text:str) -> str:
 
 
 # Recipe basic preprocessing
+<<<<<<< Updated upstream
+=======
+def basic_preprocess_tags(df: pd.DataFrame) -> pd.DataFrame:
+    removed_tags = ['time-to-make']
+    df['tags'] = df['tags'].apply(lambda tag_list: [x for x in tag_list if x not in removed_tags])
+    df['tags'] = df['tags'].apply(lambda tags: ' '.join(tags))
+    return df
+
+>>>>>>> Stashed changes
 def basic_preprocess_recipe(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
     recipe_text_columns = [
         'name',
         'description',
+<<<<<<< Updated upstream
         'merged_steps'
+=======
+        'merged_steps',
+        'tags',
+        'ingredients'
+>>>>>>> Stashed changes
     ]
     for col in recipe_text_columns:
         df[col] = df[col].apply(basic_word_processing)
