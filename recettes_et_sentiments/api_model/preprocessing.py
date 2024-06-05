@@ -112,6 +112,7 @@ def numeric_preproc(data: pd.DataFrame, col_to_preproc: list) -> pd.DataFrame:
         upper = parameters.N_STEPS_CLIP_UPPER
         )
 
+
     rb_scaler = RobustScaler()
     data[col_to_preproc] = rb_scaler.fit_transform(data[col_to_preproc])
     return data
