@@ -38,9 +38,12 @@ def lemma(text:str)->str:
     Return the lemmatize "text"
 
     Args:
-        text (str): text to be processed. Text should have been preprocessed (lowercase, ponctuation removed, stopwords removed)
+    ----------
+        text :str
+            text to be processed. Text should have been preprocessed (lowercase, ponctuation removed, stopwords removed)
 
     Returns:
+    ----------
         str: the input text without stop words
     """
     def get_wordnet_pos(treebank_tag):
@@ -67,6 +70,10 @@ def lemma(text:str)->str:
 
 
 def basic_word_processing(text:str) -> str:
+    """
+    basic word processing :
+    ponctuation, lowercase, numbers, stopwords, lemmatization
+    """
     text = remove_punctuation(text)
     text = lowercase(text)
     text = remove_numbers(text)
@@ -77,7 +84,10 @@ def basic_word_processing(text:str) -> str:
 
 # Recipe basic preprocessing
 def basic_preprocess_tags(df: pd.DataFrame) -> pd.DataFrame:
-    removed_tags = ['time-to-make']
+    """
+    remove tags considered as stop works (see parameters.py), and concat them as a string
+    """
+    removed_tags = parameters.TAGS_STOPWORDS
     df['tags'] = df['tags'].apply(lambda tag_list: [x for x in tag_list if x not in removed_tags])
     df['tags'] = df['tags'].apply(lambda tags: ' '.join(tags))
     return df
@@ -88,9 +98,20 @@ def basic_preprocess_recipe(df: pd.DataFrame, columns_to_preproc: list) -> pd.Da
     return df
 
 def numeric_preproc(data: pd.DataFrame, col_to_preproc: list) -> pd.DataFrame:
-    data['minutes'] = data['minutes'].clip(lower =5 ,upper=130)
-    data.drop(data[data.n_steps == 0].index, inplace=True) # only 1 recipe
-    data['n_steps'] = data['n_steps'].clip(upper=40)
+    """
+    clip minutes & n_steps to custom values (see parameters.py)
+    robust scale minuutes
+    """
+    data['minutes'] = data['minutes'].clip(
+        lower = parameters.MINUTES_CLIP_LOWER,
+        upper = parameters.MINUTES_CLIP_UPPER
+        )
+    data.drop(data[data.n_steps == 0].index, inplace=True)
+    data['n_steps'] = data['n_steps'].clip(
+        lower = parameters.N_STEPS_CLIP_LOWER,
+        upper = parameters.N_STEPS_CLIP_UPPER
+        )
+
 
     rb_scaler = RobustScaler()
     data[col_to_preproc] = rb_scaler.fit_transform(data[col_to_preproc])
@@ -98,11 +119,12 @@ def numeric_preproc(data: pd.DataFrame, col_to_preproc: list) -> pd.DataFrame:
 
 def full_basic_preproc_recipes(data: pd.DataFrame) -> pd.DataFrame:
     """
-    usage :
-    Function for a pipeline of all basic preprocessing
+    Function for a pipeline of all basic preprocessing:
+    * basic_preprocess_tags
+    * basic_preprocess_recipe
+    * numeric_preproc
     """
-    df = data.copy()
-    df = basic_preprocess_tags(df)
+    df = basic_preprocess_tags(data)
     df = basic_preprocess_recipe(df, parameters.RECIPE_COLUMNS_FOR_TEXT_PREPROC)
     return numeric_preproc(df, parameters.RECIPE_COLUMNS_FOR_NUMERIC_PREPROC)
 
@@ -208,16 +230,21 @@ def tfidf_vectorize(
 
     return pd.concat([df, X_df], axis = 1)
 
-def concat_columns(df:pd.DataFrame, columns:typing.List[str], dropSourceColumn:bool=True)->None:
+def concat_columns(df:pd.DataFrame, columns:typing.List[str], dropSourceColumn:bool=True)->pd.DataFrame:
     """
     create a "merge_text" column in the dataframe and merges the listed columns into it, and drop the columns
 
     Args:
-        df (pd.DataFrame): DataFrame
-        colums (List[str]) : List of column names that we'll merge into "merge_text" column
-        dropSourceColumn (bool) : if True, the column names passed (arg 'columns') are dropped
+    ----------
+        df : pd.DataFrame
+            DataFrame
+        columns : List[str]
+            List of column names that we'll merge into "merge_text" column
+        dropSourceColumn : bool
+            if True, the column names passed (arg 'columns') are dropped
 
     Returns:
+    ----------
         pd.DataFrame :  the updated dataframe
 
     """
