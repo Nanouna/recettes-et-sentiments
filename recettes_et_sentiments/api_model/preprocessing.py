@@ -8,6 +8,7 @@ from nltk.corpus import wordnet as wn
 
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.preprocessing import RobustScaler
 
 from recettes_et_sentiments.api_model import parameters
 
@@ -15,7 +16,7 @@ from recettes_et_sentiments.api_model import parameters
 # classic NLP preprocessing
 def remove_punctuation(text:str) -> str:
     for punctuation in string.punctuation:
-        text = text.replace(punctuation, ' ')
+        text = str(text).replace(punctuation, ' ')
     return text
 
 def lowercase(text:str) -> str:
@@ -29,7 +30,8 @@ def remove_numbers(text:str) -> str:
 def remove_stopwords(text:str) -> str:
     tokenized = word_tokenize(text)
     without_stopwords = [word for word in tokenized if not word in parameters.STOP_WORDS]
-    return ' '.join(without_stopwords)
+    without_recipe_stopwords = [word for word in without_stopwords if not word in parameters.RECIPE_STOPWORDS]
+    return ' '.join(without_recipe_stopwords)
 
 def lemma(text:str)->str:
     """
@@ -82,16 +84,33 @@ def basic_preprocess_tags(df: pd.DataFrame) -> pd.DataFrame:
 
 def basic_preprocess_recipe(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
+    df =  basic_preprocess_tags(df)
     recipe_text_columns = [
         'name',
         'description',
         'merged_steps',
         'tags',
-        'ingredients'
+        'merged_ingredients'
     ]
     for col in recipe_text_columns:
         df[col] = df[col].apply(basic_word_processing)
-        return df
+
+    return df
+
+def numeric_preproc(data: pd.DataFrame) -> pd.DataFrame:
+    data['minutes'] = data['minutes'].clip(lower =5 ,upper=130)
+    data.drop(data[data.n_steps == 0].index, inplace=True)
+    data['n_steps'] = data['n_steps'].clip(upper=40)
+    rb_scaler = RobustScaler()
+    data['minutes'] = rb_scaler.fit_transform(data[['minutes']])
+    data['calories'] = rb_scaler.fit_transform(data[['calories']])
+    data['total_fat_pdv'] = rb_scaler.fit_transform(data[['total_fat_pdv']])
+    data['sugar_pdv'] = rb_scaler.fit_transform(data[['sugar_pdv']])
+    data['sodium_pdv'] = rb_scaler.fit_transform(data[['sodium_pdv']])
+    data['protein_pdv'] = rb_scaler.fit_transform(data[['protein_pdv']])
+    data['saturated_fat_pdv'] = rb_scaler.fit_transform(data[['saturated_fat_pdv']])
+    data['carbohydrates_pdv'] = rb_scaler.fit_transform(data[['carbohydrates_pdv']])
+    return data
 
 def count_vectorize(
     df:pd.DataFrame,
