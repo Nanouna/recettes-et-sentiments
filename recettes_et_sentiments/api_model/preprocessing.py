@@ -218,10 +218,3 @@ def tfidf_vectorize(
     X_df = pd.DataFrame(X.toarray(), columns = tf_idf_vectorizer.get_feature_names_out(), index=df.index)
 
     return pd.concat([df, X_df], axis = 1)
-
-def get_y(df_recipe: pd.DataFrame, df_reviews : pd.DataFrame) -> pd.DataFrame:
-    df_reviews.rename(columns={"recipe_id": "id"}, inplace=True)
-    ratings_rview_cnt = df_reviews.groupby("id")[['rating']].agg(
-                                    mean_rating=('rating', 'mean')
-                                    )
-    return df_recipe.merge(ratings_rview_cnt, how="inner", on='id')

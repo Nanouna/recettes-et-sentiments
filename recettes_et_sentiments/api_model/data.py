@@ -72,6 +72,7 @@ def add_columns_and_merge_text(df:pd.DataFrame) -> pd.DataFrame:
 def get_y(df_recipe: pd.DataFrame, df_reviews : pd.DataFrame) -> pd.DataFrame:
     df_reviews.rename(columns={"recipe_id": "id"}, inplace=True)
     ratings_rview_cnt = df_reviews.groupby("id")[['rating']].agg(
-                                    mean_rating=('rating', 'mean')
+                                    mean_rating=('rating', 'mean'),
+                                    count_rating=('rating', 'count')
                                     )
     return df_recipe.merge(ratings_rview_cnt, how="inner", on='id')
