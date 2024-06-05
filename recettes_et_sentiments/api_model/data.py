@@ -2,12 +2,21 @@ import ast
 import pandas as pd
 
 
-def load_data(path: str) -> pd.DataFrame:
+def load_recipes(path: str) -> pd.DataFrame:
     '''
     load csv files
     '''
     df = pd.read_csv(path,
                      parse_dates=['submitted'],
+                     engine='python')
+    return df
+
+def load_reviews(path: str) -> pd.DataFrame:
+    '''
+    load csv files
+    '''
+    df = pd.read_csv(path,
+                     parse_dates=['date'],
                      engine='python')
     return df
 
@@ -59,3 +68,10 @@ def add_columns_and_merge_text(df:pd.DataFrame) -> pd.DataFrame:
     df.drop(columns={'nutrition', 'steps', 'ingredients'}, inplace=True)
 
     return df
+
+def get_y(df_recipe: pd.DataFrame, df_reviews : pd.DataFrame) -> pd.DataFrame:
+    df_reviews.rename(columns={"recipe_id": "id"}, inplace=True)
+    ratings_rview_cnt = df_reviews.groupby("id")[['rating']].agg(
+                                    mean_rating=('rating', 'mean')
+                                    )
+    return df_recipe.merge(ratings_rview_cnt, how="inner", on='id')

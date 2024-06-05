@@ -1,6 +1,6 @@
+
 import pandas as pd
 import string
-import typing
 
 from nltk import word_tokenize, pos_tag
 from nltk.stem import WordNetLemmatizer
@@ -98,18 +98,23 @@ def basic_preprocess_recipe(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 def numeric_preproc(data: pd.DataFrame) -> pd.DataFrame:
+
     data['minutes'] = data['minutes'].clip(lower =5 ,upper=130)
     data.drop(data[data.n_steps == 0].index, inplace=True)
     data['n_steps'] = data['n_steps'].clip(upper=40)
+
     rb_scaler = RobustScaler()
-    data['minutes'] = rb_scaler.fit_transform(data[['minutes']])
-    data['calories'] = rb_scaler.fit_transform(data[['calories']])
-    data['total_fat_pdv'] = rb_scaler.fit_transform(data[['total_fat_pdv']])
-    data['sugar_pdv'] = rb_scaler.fit_transform(data[['sugar_pdv']])
-    data['sodium_pdv'] = rb_scaler.fit_transform(data[['sodium_pdv']])
-    data['protein_pdv'] = rb_scaler.fit_transform(data[['protein_pdv']])
-    data['saturated_fat_pdv'] = rb_scaler.fit_transform(data[['saturated_fat_pdv']])
-    data['carbohydrates_pdv'] = rb_scaler.fit_transform(data[['carbohydrates_pdv']])
+    col_to_preproc = [
+        'minutes',
+        'calories',
+        'total_fat_pdv',
+        'sugar_pdv',
+        'sodium_pdv',
+        'protein_pdv',
+        'saturated_fat_pdv',
+        'carbohydrates_pdv']
+
+    data[col_to_preproc] = rb_scaler.fit_transform(data[col_to_preproc])
     return data
 
 def count_vectorize(
@@ -215,6 +220,7 @@ def tfidf_vectorize(
     return pd.concat([df, X_df], axis = 1)
 
 
+
 def concat_columns(df:pd.DataFrame, columns:typing.List[str], dropSourceColumn:bool=True)->None:
     """
     create a "merge_text" column in the dataframe and merges the listed columns into it, and drop the columns
@@ -235,3 +241,12 @@ def concat_columns(df:pd.DataFrame, columns:typing.List[str], dropSourceColumn:b
         df.drop(columns=columns,axis=1, inplace=True)
 
     return df
+
+  
+def get_y(df_recipe: pd.DataFrame, df_reviews : pd.DataFrame) -> pd.DataFrame:
+    df_reviews.rename(columns={"recipe_id": "id"}, inplace=True)
+    ratings_rview_cnt = df_reviews.groupby("id")[['rating']].agg(
+                                    mean_rating=('rating', 'mean')
+                                    )
+    return df_recipe.merge(ratings_rview_cnt, how="inner", on='id')
+
