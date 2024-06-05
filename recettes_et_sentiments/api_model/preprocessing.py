@@ -218,3 +218,24 @@ def tfidf_vectorize(
     X_df = pd.DataFrame(X.toarray(), columns = tf_idf_vectorizer.get_feature_names_out(), index=df.index)
 
     return pd.concat([df, X_df], axis = 1)
+
+def concat_columns(df:pd.DataFrame, columns:typing.List[str], dropSourceColumn:bool=True)->None:
+    """
+    create a "merge_text" column in the dataframe and merges the listed columns into it, and drop the columns
+
+    Args:
+        df (pd.DataFrame): DataFrame
+        colums (List[str]) : List of column names that we'll merge into "merge_text" column
+        dropSourceColumn (bool) : if True, the column names passed (arg 'columns') are dropped
+
+    Returns:
+        pd.DataFrame :  the updated dataframe
+
+    """
+
+    df['merged_text'] = df[columns].apply(lambda row: ' '.join(row.values.astype(str)), axis=1)
+
+    if dropSourceColumn:
+        df.drop(columns=columns,axis=1, inplace=True)
+
+    return df
