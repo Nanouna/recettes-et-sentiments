@@ -89,7 +89,7 @@ def basic_preprocess_recipe(df: pd.DataFrame, columns_to_preproc: list) -> pd.Da
 
 def numeric_preproc(data: pd.DataFrame, col_to_preproc: list) -> pd.DataFrame:
     data['minutes'] = data['minutes'].clip(lower =5 ,upper=130)
-    data.drop(data[data.n_steps == 0].index, inplace=True)
+    data.drop(data[data.n_steps == 0].index, inplace=True) # only 1 recipe
     data['n_steps'] = data['n_steps'].clip(upper=40)
 
     rb_scaler = RobustScaler()
