@@ -219,9 +219,34 @@ def tfidf_vectorize(
 
     return pd.concat([df, X_df], axis = 1)
 
+
+
+def concat_columns(df:pd.DataFrame, columns:typing.List[str], dropSourceColumn:bool=True)->None:
+    """
+    create a "merge_text" column in the dataframe and merges the listed columns into it, and drop the columns
+
+    Args:
+        df (pd.DataFrame): DataFrame
+        colums (List[str]) : List of column names that we'll merge into "merge_text" column
+        dropSourceColumn (bool) : if True, the column names passed (arg 'columns') are dropped
+
+    Returns:
+        pd.DataFrame :  the updated dataframe
+
+    """
+
+    df['merged_text'] = df[columns].apply(lambda row: ' '.join(row.values.astype(str)), axis=1)
+
+    if dropSourceColumn:
+        df.drop(columns=columns,axis=1, inplace=True)
+
+    return df
+
+  
 def get_y(df_recipe: pd.DataFrame, df_reviews : pd.DataFrame) -> pd.DataFrame:
     df_reviews.rename(columns={"recipe_id": "id"}, inplace=True)
     ratings_rview_cnt = df_reviews.groupby("id")[['rating']].agg(
                                     mean_rating=('rating', 'mean')
                                     )
     return df_recipe.merge(ratings_rview_cnt, how="inner", on='id')
+
