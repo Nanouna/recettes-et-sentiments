@@ -51,8 +51,8 @@ def add_columns_and_merge_text(df:pd.DataFrame) -> pd.DataFrame:
     df[nutrition_columns] = pd.DataFrame(df['nutrition'].tolist(), index=df.index)
 
     # merge list of steps as one string
-    df['merged_steps'] = df['steps'].apply(lambda steps: "\n".join(steps))
-    df['merged_ingredients'] = df['ingredients'].apply(lambda steps: "\n".join(steps))
+    df['merged_steps'] = df['steps'].apply(lambda steps: " ".join(steps))
+    df['merged_ingredients'] = df['ingredients'].apply(lambda steps: " ".join(steps))
 
 
     # drop redundant columns
