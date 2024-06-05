@@ -1,6 +1,6 @@
-
 import pandas as pd
 import string
+import typing
 
 from nltk import word_tokenize, pos_tag
 from nltk.stem import WordNetLemmatizer
@@ -82,40 +82,29 @@ def basic_preprocess_tags(df: pd.DataFrame) -> pd.DataFrame:
     df['tags'] = df['tags'].apply(lambda tags: ' '.join(tags))
     return df
 
-def basic_preprocess_recipe(df: pd.DataFrame) -> pd.DataFrame:
-    df = df.copy()
-    df =  basic_preprocess_tags(df)
-    recipe_text_columns = [
-        'name',
-        'description',
-        'merged_steps',
-        'tags',
-        'merged_ingredients'
-    ]
-    for col in recipe_text_columns:
+def basic_preprocess_recipe(df: pd.DataFrame, columns_to_preproc: list) -> pd.DataFrame:
+    for col in columns_to_preproc:
         df[col] = df[col].apply(basic_word_processing)
-
     return df
 
-def numeric_preproc(data: pd.DataFrame) -> pd.DataFrame:
-
+def numeric_preproc(data: pd.DataFrame, col_to_preproc: list) -> pd.DataFrame:
     data['minutes'] = data['minutes'].clip(lower =5 ,upper=130)
     data.drop(data[data.n_steps == 0].index, inplace=True)
     data['n_steps'] = data['n_steps'].clip(upper=40)
 
     rb_scaler = RobustScaler()
-    col_to_preproc = [
-        'minutes',
-        'calories',
-        'total_fat_pdv',
-        'sugar_pdv',
-        'sodium_pdv',
-        'protein_pdv',
-        'saturated_fat_pdv',
-        'carbohydrates_pdv']
-
     data[col_to_preproc] = rb_scaler.fit_transform(data[col_to_preproc])
     return data
+
+def full_basic_preproc_recipes(data: pd.DataFrame) -> pd.DataFrame:
+    """
+    usage :
+    Function for a pipeline of all basic preprocessing
+    """
+    df = data.copy()
+    df = basic_preprocess_tags(df)
+    df = basic_preprocess_recipe(df, parameters.RECIPE_COLUMNS_FOR_TEXT_PREPROC)
+    return numeric_preproc(df, parameters.RECIPE_COLUMNS_FOR_NUMERIC_PREPROC)
 
 def count_vectorize(
     df:pd.DataFrame,
