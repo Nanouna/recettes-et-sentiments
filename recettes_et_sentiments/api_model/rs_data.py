@@ -4,19 +4,6 @@ import pandas as pd
 
 logger = logging.getLogger(__name__)
 
-
-def load_recipes(path: str) -> pd.DataFrame:
-    """
-    load csv files
-    """
-    logger.info(f"loading '{path}'")
-    df = pd.read_csv(path,
-                     parse_dates=['submitted'],
-                     engine='python')
-    logger.info(f"loading '{path}' done.")
-
-    return add_columns_and_merge_text(df)
-
 def load_reviews(path: str) -> pd.DataFrame:
     '''
     load csv files
@@ -83,6 +70,18 @@ def add_columns_and_merge_text(df:pd.DataFrame) -> pd.DataFrame:
     logger.info("add_columns_and_merge_text done")
 
     return df
+
+def load_recipes(path: str) -> pd.DataFrame:
+    """
+    load csv files
+    """
+    logger.info(f"loading '{path}'")
+    df = pd.read_csv(path,
+                     parse_dates=['submitted'],
+                     engine='python')
+    logger.info(f"loading '{path}' done.")
+
+    return add_columns_and_merge_text(df)
 
 def get_y(df_recipe: pd.DataFrame, df_reviews : pd.DataFrame) -> pd.DataFrame:
     """

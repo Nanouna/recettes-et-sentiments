@@ -38,7 +38,12 @@ RECIPE_STOPWORDS = ['minute', 'le',
                     '°f', '°c', '½re','½s'
                      ]
 
-TAGS_STOPWORDS = ['60-minutes-or-less','30-minutes-or-less','15-minutes-or-less','time-to-make']
+TAGS_STOPWORDS = ['60-minutes-or-less','30-minutes-or-less',
+                  '15-minutes-or-less','time-to-make',
+                  'preparation', 'course', 'main-ingredient',
+                  'cuisine', '4-hours-or-less', '3-steps-or-less',
+                  '5-ingredients-or-less','healthy-2',
+                  ]
 
 RECIPE_COLUMNS_FOR_TEXT_PREPROC = [
         'name',
