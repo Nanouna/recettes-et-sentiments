@@ -49,7 +49,6 @@ RECIPE_COLUMNS_FOR_TEXT_PREPROC = [
         'name',
         'description',
         'merged_steps',
-        'tags',
         'merged_ingredients'
     ]
 RECIPE_COLUMNS_FOR_NUMERIC_PREPROC = [
