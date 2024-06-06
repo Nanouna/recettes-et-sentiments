@@ -1,3 +1,5 @@
+import os
+import pandas as pd
 import typing
 import logging
 
@@ -9,6 +11,21 @@ from sklearn.pipeline import Pipeline
 from recettes_et_sentiments.api_model import preprocessing
 
 logger = logging.getLogger(__name__)
+
+
+def save_to_parquet(df, filename):
+    logger.info(f"Saving DataFrame to {filename}")
+    df.to_parquet(filename, index=False)
+    return df
+
+def load_from_parquet(filename):
+    if os.path.exists(filename):
+        logger.info(f"Loading DataFrame from {filename}")
+        return pd.read_parquet(filename)
+    else:
+        logger.info(f"{filename} does not exist. Skipping load.")
+        return None
+
 
 
 class BasicPreprocessing(BaseEstimator, TransformerMixin):
@@ -53,11 +70,39 @@ class ConcatColumns(BaseEstimator, TransformerMixin):
         return self
 
     def transform(self, X):
-        logger.info("Transforming data with BasicPreprocessing")
+        logger.info("Transforming data with ConcatColumns")
         return preprocessing.concat_columns(X.copy(), self.columns, self.dropSourceColumn)
 
     def get_feature_names_out(self):
         pass
+
+
+
+
+
+class CacheStep(BaseEstimator, TransformerMixin):
+    def __init__(self, filename, step_func):
+        self.filename = filename
+        self.step_func = step_func
+        self.cached_df = load_from_parquet(filename)
+
+    def fit(self, X, y=None):
+        if self.cached_df is not None:
+            logger.info(f"FIT : Using cached data from {self.filename}")
+        else:
+            logger.info(f"FIT : No cached data available for {self.filename}, fitting step")
+            self.step_func.fit(X, y)
+        return self
+
+    def transform(self, X):
+        if self.cached_df is not None:
+            logger.info(f"Transform : Using cached data from {self.filename}")
+            return self.cached_df
+        else:
+            logger.info(f"Transforming data and saving to {self.filename}")
+            transformed_X = self.step_func.transform(X)
+            save_to_parquet(transformed_X, self.filename)
+            return transformed_X
 
 
 
@@ -66,7 +111,8 @@ def make_preprocessor_pipeline( use_count_vectorizer:bool,
                                 min_df:float=0.1,
                                 max_df:float=0.95,
                                 max_features:int=None,
-                                ngram_range=(1,1)
+                                ngram_range=(1,1),
+                                cache=True
                                ) -> Pipeline:
 
     """
@@ -97,6 +143,11 @@ def make_preprocessor_pipeline( use_count_vectorizer:bool,
         ngram_range : tuple
             see CountVectorizer/TfidfVectorizer documentation
 
+        cache : bool
+            Use cache for intermediary steps, result from BasicProcessing & ConcatColumn are stored as parquet.
+            Those parket are retrieved if they exists.
+            ConcatColum cache file name contains the number of column to concat (order of column is important)
+
     Returns:
     ----------
         Pipeline :  the pipeline ready to be fit and transform
@@ -106,22 +157,44 @@ def make_preprocessor_pipeline( use_count_vectorizer:bool,
     ----------
 
 ```
-    recipe_df_ori = data.load_recipes("../batch-1672-recettes-et-sentiments-data/RAW_recipes.csv")
+min_df=6
+max_df=0.98
+max_features=None
+ngram_range=(1,1)
+countVectorizer=False
+file_suffix = f"{'CountVectorizer' if countVectorizer else 'TfIdfVectorizer'}_{min_df}_{max_df}_{max_features}_{str(ngram_range[0])+'_'+str(ngram_range[1])}"
 
-    preprocessor_pipeline = preprocessing_pipeline.make_preprocessor_pipeline(
-        use_count_vectorizer=True,
-        columns_to_merge_for_training=["name", "description", "merged_ingredients"],
-        )
+preprocessor_pipeline = preprocessing_pipeline.make_preprocessor_pipeline(
+    use_count_vectorizer=True,
+    columns_to_merge_for_training=["name", "description", "merged_ingredients"],
+    min_df=min_df,
+    max_df=max_df,
+    max_features=max_features,
+    ngram_range=ngram_range,
+    cache=True
+)
 
-    recipe_processed = preprocessor_pipeline.fit_transform(recipe_df)
+recipe_processed = preprocessor_pipeline.fit_transform(recipe_df_ori)
 
-    recipe_processed.to_parquet("../batch-1672-recettes-et-sentiments-data/basic_preproc_recipes.parquet")
+recipe_processed.to_parquet(f"../batch-1672-recettes-et-sentiments-data/preproc_recipes_{file_suffix}.parquet")
 ```
     """
 
     vectorizer_args = {"min_df":min_df, "max_df":max_df, "max_features":max_features, "ngram_range":ngram_range}
-
     vectorizer = CountVectorizer(**vectorizer_args) if use_count_vectorizer else TfidfVectorizer(**vectorizer_args)
+
+    basic_preproc = BasicPreprocessing()
+    concat_columns = ConcatColumns(columns=columns_to_merge_for_training)
+
+    folder =  "data/cache/"
+
+
+    basic_preproc_filename = f"{folder}basic_preproc.parquet"
+    concat_columns_filename = f"{folder}concat_columns_{'_'.join(columns_to_merge_for_training)}.parquet"
+
+    if cache:
+        basic_preproc = CacheStep(basic_preproc_filename, basic_preproc)
+        concat_columns = CacheStep(concat_columns_filename, concat_columns)
 
 
         # Créer le ColumnTransformer
@@ -140,8 +213,8 @@ def make_preprocessor_pipeline( use_count_vectorizer:bool,
 
     # Créer le pipeline principal avec ColumnTransformer
     preprocessing_pipeline = Pipeline(steps=[
-        ('basic_preproc', BasicPreprocessing()),
-        ('concat_columns', ConcatColumns(columns=columns_to_merge_for_training)),
+        ('basic_preproc', basic_preproc),
+        ('concat_columns', concat_columns),
         ('vectorize_and_combine', column_transformer)
     ])
 
