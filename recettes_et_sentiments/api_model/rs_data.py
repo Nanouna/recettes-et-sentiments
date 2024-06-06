@@ -1,0 +1,101 @@
+import ast
+import logging
+import pandas as pd
+
+logger = logging.getLogger(__name__)
+
+def load_reviews(path: str) -> pd.DataFrame:
+    '''
+    load csv files
+    '''
+    df = pd.read_csv(path,
+                     parse_dates=['date'],
+                     engine='python')
+    return df
+
+
+def convert_column_to_list(column):
+    '''
+    Read csv as python interpretable data
+    '''
+    return column.apply(ast.literal_eval)
+
+
+def add_columns_and_merge_text(df:pd.DataFrame) -> pd.DataFrame:
+    """
+    Convert RAW_recipe_csv dataframe as python objects and process its data in
+    relevant columns
+
+    * set the recipe id (id) as index
+    * convert each text columns, which all are list of phrases lists
+    * steps & ingredients are converted to a single text with " " as concat separator
+    * create a column per numérical values (calories & various Percent Daily Values)
+    *
+
+    return dataframe
+    """
+    logger.info("Starting add_columns_and_merge_text processing")
+
+    # let's copy the df to be able to reload the function without missing column 'id' error
+    df = df.copy()
+    # set id as column
+    df.set_index('id', inplace=True)
+
+    # convert string list as list for future processing
+    df['tags'] = convert_column_to_list(df['tags'])
+    df['nutrition'] = convert_column_to_list(df['nutrition'])
+    df['steps'] = convert_column_to_list(df['steps'])
+    df['ingredients'] = convert_column_to_list(df['ingredients'])
+
+    # extract nutrition facts as individual columns
+    nutrition_columns = [
+        'calories',
+        'total_fat_pdv',
+        'sugar_pdv',
+        'sodium_pdv',
+        'protein_pdv',
+        'saturated_fat_pdv',
+        'carbohydrates_pdv'
+        ]
+    df[nutrition_columns] = pd.DataFrame(df['nutrition'].tolist(), index=df.index)
+
+    # merge list of steps as one string
+    df['merged_steps'] = df['steps'].apply(lambda steps: " ".join(steps))
+    df['merged_ingredients'] = df['ingredients'].apply(lambda steps: " ".join(steps))
+
+
+    # drop redundant columns
+    df.drop(columns={'nutrition', 'steps', 'ingredients'}, inplace=True)
+
+    logger.info("add_columns_and_merge_text done")
+
+    return df
+
+def load_recipes(path: str) -> pd.DataFrame:
+    """
+    load csv files
+    """
+    logger.info(f"loading '{path}'")
+    df = pd.read_csv(path,
+                     parse_dates=['submitted'],
+                     engine='python')
+    logger.info(f"loading '{path}' done.")
+
+    return add_columns_and_merge_text(df)
+
+def get_y(df_recipe: pd.DataFrame, df_reviews : pd.DataFrame) -> pd.DataFrame:
+    """
+    Compute the average recipe rating and the number of ratings per recipe.
+    The number of recipe will be use to select recipe with enough rating to
+    be relevant for our study
+    """
+    logger.info("Starting get_y processing")
+    df_reviews.rename(columns={"recipe_id": "id"}, inplace=True)
+    ratings_rview_cnt = df_reviews.groupby("id")[['rating']].agg(
+                                    mean_rating=('rating', 'mean'),
+                                    count_rating=('rating', 'count')
+                                    )
+    df =  df_recipe.merge(ratings_rview_cnt, how="inner", on='id')
+
+    logger.info("get_y done")
+    return df
