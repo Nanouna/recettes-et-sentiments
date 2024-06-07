@@ -198,3 +198,6 @@ venv.bak/
 .pytest_cache/
 Thomas 2.ipynb
 recettes_et_sentiments/api_model/last_preproc_we_hope.parquet
+data/last_preproc_we_hope.parquet
+theo.ipynb
+W2V_model_2P.ipynb
