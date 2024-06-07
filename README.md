@@ -120,12 +120,6 @@ We maintain 21399 recipes to train on with this following distribution. It's the
 
 ![alt text](readme_images/image.png)
 
-Text preprocessing
-
-- start with basic word preprocessing (removing uppercase, numerical characters, ponctuation, english stopwords, lemmatizing by word types)
-- adding custom stopword list to be removed selected from highest recurring words in the corpus if we felt that the words do not differentiate one recipe from another
-- tags are pre handled to the preprocessing to remove recurring tags that add no additional sense value
-
 Numerical preprocessing
 
 To handle excessive outliers while still maintaining some recipes exagerated features we mitigates the minutes and step by setting a minimum and a maximum
@@ -134,7 +128,36 @@ To handle excessive outliers while still maintaining some recipes exagerated fea
 
 We then applied a RobustScaler to the numerical beside the n_step and n_ingredients are they are already in a similar range to the rest. RobustSacler is ideal for our not always normal distribution with many outliers even if mitigated.
 
-#### Model
+Text preprocessing
+
+- start with basic word preprocessing (removing uppercase, numerical characters, ponctuation, english stopwords, lemmatizing by word types)
+- adding custom stopword list to be removed selected from highest recurring words in the corpus if we felt that the words do not differentiate one recipe from another
+- tags are pre handled to the preprocessing to remove recurring tags that add no additional sense value
+
+- embedding of words 3 options tried : (using recipe name, description & ingredients)
+  - CountVectorizer & TF IDF : with default setting we get a huge nubmer of columns, adjusting min_df,max_df we still get 15k columns and 26GB dataset.
+    Training a LinearRegression model on this dataset exhaust the memorry resources of a high end computer with 64GB of RAM + 300GB of Swap
+  - Using Word2Vec, where we create a vector(100,) per word and then compute the average vector so that it represents the recipe. Doing so it results in a much lower dataset.
+    However, running a cross_validate(r2) gives a test_score of -5.1329
+
+## Conclusion
+
+  We were note able to explain the average score given by Food.com users to recipes from the name, description & ingredients using ML or Deep Learning.
+
+  It was challenging anyway with scores 1,2,3 stars representing altogether only 6% of to users ratings, and it's even less considering that the 5.37% of 0 star rating (people didn't rate the recipe but left a comment)
+
+
+  | Star | Rating (%) |
+|------|------------|
+| 5    | 72.09      |
+| 4    | 16.55      |
+| 0    |  5.37      |
+| 3    |  3.61      |
+| 2    |  1.25      |
+| 1    |  1.13      |
+
+We could have spent more time on the dataset and model, but we felt it was unlikely to have a different conculsion and trying other use case on this dataset was more compelling to us.
+
 
 ### 2. Recipe recommendation
 
