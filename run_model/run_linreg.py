@@ -3,7 +3,7 @@ from sklearn.linear_model import LinearRegression
 import pandas as pd
 
 print("loading parquet")
-preproc_with_reviews = pd.read_parquet(f"../batch-1672-recettes-et-sentiments-data/preproc_recipes_tfidfvectorizer_defaults_with_y.parquet").iloc[0:1000]
+preproc_with_reviews = pd.read_parquet(f"../../batch-1672-recettes-et-sentiments-data/preproc_recipes_tfidfvectorizer_defaults_with_y.parquet").iloc[0:1000]
 preproc_with_reviews.drop(columns='remainder__merged_steps', axis=1, inplace=True)
 print("loading parquet - done ")
 print("cross_validate - start")
