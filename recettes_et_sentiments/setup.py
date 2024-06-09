@@ -14,5 +14,5 @@ setup(
     version='0.1',
     packages=find_packages(),
     package_dir={'': '.'},
-    install_requires=parse_requirements('requirements_dev.txt'),
+    install_requires=parse_requirements('requirements.txt'),
 )

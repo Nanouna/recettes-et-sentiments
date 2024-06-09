@@ -18,16 +18,18 @@ RUN adduser --home /rs rs && \
 
 WORKDIR /rs
 
-COPY ../requirements.txt requirements.txt
-RUN pip install --upgrade pip; \
-    pip install --prefer-binary --ignore-installed -r requirements.txt
+COPY ../requirements.txt /rs/recettes_et_sentiments/requirements.txt
+RUN pip install --upgrade pip;
+# \
+#    pip install --prefer-binary --ignore-installed -r /rs/recettes_et_sentiments/requirements.txt
 
-COPY ../recettes_et_sentiments recettes_et_sentiments
-COPY ../docker/start.sh start.sh
+COPY ../recettes_et_sentiments /rs/recettes_et_sentiments
+COPY ../docker/start.sh /rs/start.sh
 WORKDIR /rs/recettes_et_sentiments
+RUN which pip
 RUN pip install .
 
-RUN make reset_local_files
+# RUN make reset_local_files
 
 USER rs
-ENTRYPOINT ["/start.sh"]
+ENTRYPOINT ["/rs/start.sh"]
