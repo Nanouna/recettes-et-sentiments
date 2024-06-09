@@ -1,4 +1,5 @@
 # model
+wheel
 numpy
 pandas
 scikit-learn

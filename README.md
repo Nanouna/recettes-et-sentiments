@@ -54,8 +54,9 @@ The third goal is to generate a brand new receipes from a list of key ingredient
 - pip install -r requirements.txt
 - pip install .
 - make all_tests
-- cd docker
-- docker build...
+- sudo snap install yq
+- ./docker-build.sh
+- ./docker-run.sh
 - setup GCP project
 - deploy on cloud run
 

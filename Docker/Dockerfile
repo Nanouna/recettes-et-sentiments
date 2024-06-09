@@ -12,24 +12,27 @@ RUN apt-get update     && \
     apt-get upgrade -y && \
     apt-get install -y wget
 
-RUN adduser --home /rs rs && \
-    chown   -R rs:rs /rs && \
-    chmod   755 /rs
+# RUN adduser --home /rs rs && \
+#     chown   -R rs:rs /rs && \
+#     chmod   755 /rs
 
+RUN mkdir /rs
+RUN pip install wheel         && \
+    pip install --upgrade pip
+
+
+COPY ../requirements.txt /rs/
+COPY ../setup.py /rs/
+COPY ../recettes_et_sentiments /rs/recettes_et_sentiments
+# RUN chown -R rs:rs /rs
 WORKDIR /rs
 
-COPY ../requirements.txt /rs/recettes_et_sentiments/requirements.txt
-RUN pip install --upgrade pip;
-# \
-#    pip install --prefer-binary --ignore-installed -r /rs/recettes_et_sentiments/requirements.txt
-
-COPY ../recettes_et_sentiments /rs/recettes_et_sentiments
-COPY ../docker/start.sh /rs/start.sh
-WORKDIR /rs/recettes_et_sentiments
-RUN which pip
-RUN pip install .
+RUN pip install -r requirements.txt && \
+    pip install . || { echo 'pip install failed' ; exit 1; }
 
 # RUN make reset_local_files
+COPY ../Docker/start.sh /rs/start.sh
 
-USER rs
+
+# USER rs
 ENTRYPOINT ["/rs/start.sh"]

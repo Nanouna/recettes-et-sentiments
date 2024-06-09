@@ -1,1 +1,1 @@
-docker build -t recettes-et-sentiments-api -f docker/Dockerfile .
+docker build -t recettes-et-sentiments-api -f Docker/Dockerfile .

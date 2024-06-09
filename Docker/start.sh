@@ -1,4 +1,4 @@
-
+#!/bin/sh
 
 # Vérifier si les variables d'environnement sont définies
 if [ -z "$BUCKET_URL" ] || [ -z "$FILE_NAMES" ]; then
@@ -7,7 +7,7 @@ if [ -z "$BUCKET_URL" ] || [ -z "$FILE_NAMES" ]; then
 fi
 
 IFS=';'
-BASE_FOLDER=/r-s/data/
+BASE_FOLDER=/tmp/data/
 
 mkdir ${BASE_FOLDER}
 
@@ -16,10 +16,10 @@ for FILE in $FILE_NAMES; do
     FILE_URL="${BUCKET_URL}/${FILE}"
 
     # Destination où le fichier sera téléchargé
-    DESTINATION="/r-s/data/${FILE}"
+    DESTINATION="${BASE_FOLDER}/${FILE}"
 
     # Télécharger le fichier en utilisant wget
-    wget -O "$DESTINATION" "$FILE_URL"
+    wget -q -O "$DESTINATION" "$FILE_URL"
 
     # Vérifier si le fichier a été téléchargé avec succès
     if [ -f "$DESTINATION" ]; then
@@ -30,9 +30,13 @@ for FILE in $FILE_NAMES; do
     fi
 done
 
-
+echo "uncompressing .tar.bz2 files"
 cd ${BASE_FOLDER}
 cat *.tar.bz2 | tar -ixjv
 cd -
+echo "uncompressing .tar.bz2 files - DONE"
 
-exec uvicorn recettes-et-sentiments.api.fast:app --host 0.0.0.0 --port $PORT
+ls -la $BASE_FOLDER
+
+cd /rs/
+exec uvicorn recettes_et_sentiments.api.fast:app --host 0.0.0.0 --port $PORT
