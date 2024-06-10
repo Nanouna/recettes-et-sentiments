@@ -94,7 +94,7 @@ if __name__ == "__main__":
         window=10,
         min_count=1,
         workers=6,
-        cache=False
+        cache=True
     )
 
     # train_size = int(recipe_df_ori.shape[0] * 0.8)
