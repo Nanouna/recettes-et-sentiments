@@ -1,6 +1,10 @@
+import os
+import typing
+import joblib
+import logging
+
 import numpy as np
 import pandas as pd
-import typing
 
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.compose import ColumnTransformer
@@ -9,10 +13,11 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 from gensim.models import FastText
 
+
 from recettes_et_sentiments.api_model.preprocessing_pipeline import CacheStep, BasicPreprocessing, ConcatColumns
 from recettes_et_sentiments.api_model import rs_data, preprocessing, preprocessing_pipeline
 
-
+logger = logging.getLogger(__name__)
 
 class FastVectorizer(BaseEstimator, TransformerMixin):
     def __init__(self, vector_size=100, window=5, min_count=1, workers=4):
@@ -83,28 +88,51 @@ def make_fast_preprocessor_pipeline(columns_to_merge_for_training:typing.List[st
 
 if __name__ == "__main__":
 
-    from sklearn.model_selection import cross_validate
-    from sklearn.linear_model import LinearRegression
-
-    recipe_df_ori = rs_data.load_recipes("../../../batch-1672-recettes-et-sentiments-data/RAW_recipes.csv")
-
-    preprocessor_pipeline = make_fast_preprocessor_pipeline(
-        columns_to_merge_for_training=["name", "tags", "description", "merged_ingredients"],
-        vector_size=2000,
-        window=10,
-        min_count=1,
-        workers=6,
-        cache=True
-    )
-
     # train_size = int(recipe_df_ori.shape[0] * 0.8)
     # train_recipe_df = recipe_df_ori.iloc[0:train_size]
     # test_recipe_df  = recipe_df_ori.iloc[train_size+1:]
 
-    recipe_processed = preprocessor_pipeline.fit_transform(recipe_df_ori)
-    recipe_processed.to_parquet(f"../batch-1672-recettes-et-sentiments-data/preproc_recipes_fast_name-tag-desc-ingredients.parquet")
+    pipeline_pkl_path = 'data/preprocessor_pipeline.pkl'
+    recipe_df_ori = rs_data.load_recipes("../batch-1672-recettes-et-sentiments-data/RAW_recipes.csv")
+
+    if os.path.exists(pipeline_pkl_path):
+        logger.info(f"Loading pipeline from {pipeline_pkl_path}")
+        preprocessor_pipeline = joblib.load(pipeline_pkl_path)
+    else:
+        logger.info(f"creating pipeline from {pipeline_pkl_path}")
+
+        preprocessor_pipeline = make_fast_preprocessor_pipeline(
+            columns_to_merge_for_training=["name", "tags", "description", "merged_ingredients"],
+            vector_size=2000,
+            window=10,
+            min_count=1,
+            workers=6,
+            cache=True
+        )
+        preprocessor_pipeline.fit(recipe_df_ori)
+        joblib.dump(preprocessor_pipeline, pipeline_pkl_path)
+        logger.info(f"storing pipeline to {pipeline_pkl_path}")
+
+
+    recipe_processed_cache_path = f"data/cache/preproc_recipes_fast_name-tag-desc-ingredients.parquet"
+
+    if os.path.exists(recipe_processed_cache_path):
+        logger.info(f"Loading Preprocessed DataFrame from {recipe_processed_cache_path}")
+    else:
+        logger.info(f"Creating Preprocessed DataFrame")
+        recipe_processed = preprocessor_pipeline.transform(recipe_df_ori)
+        recipe_processed.to_parquet(recipe_processed_cache_path)
+        logger.info(f"Storing Preprocessed DataFrame to {recipe_processed_cache_path}")
 
 
     available_ingredients = ['tomato', 'cheese', 'basil']
 
-    #preprocessor_pipeline.transform()
+    # Transform ingredients to vector
+    ingredients_text = ' '.join(available_ingredients)
+    ingredients_vector = preprocessor_pipeline.named_steps['vectorize_and_combine'].named_transformers_['text']._get_mean_vector(ingredients_text).reshape(1, -1)
+
+    similarities = cosine_similarity(ingredients_vector, np.vstack(recipe_processed['vector'].values))
+    top_indices = similarities.argsort()[0][-5:]  # Top 5 similar recipes
+
+    recommended_recipes = recipe_processed.iloc[top_indices]
+    print(recommended_recipes)
