@@ -89,6 +89,7 @@ def basic_preprocess_tags(df: pd.DataFrame) -> pd.DataFrame:
     """
     removed_tags = parameters.TAGS_STOPWORDS
     df['tags'] = df['tags'].apply(lambda tag_list: [x for x in tag_list if x not in removed_tags])
+    df['tags'] = df['tags'].apply(lambda tags : list(set([parameters.TAGS_REPLACEMENTS.get(tag, tag) for tag in tags])))
     # df['tags'] = df['tags'].apply(lambda tags: ' '.join(tags)) removed for word2vec
     return df
 
