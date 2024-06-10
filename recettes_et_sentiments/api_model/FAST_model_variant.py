@@ -15,7 +15,7 @@ from gensim.models import FastText
 
 
 from recettes_et_sentiments.api_model.preprocessing_pipeline import CacheStep, BasicPreprocessing, ConcatColumns
-from recettes_et_sentiments.api_model import rs_data, preprocessing, preprocessing_pipeline
+from recettes_et_sentiments.api_model import rs_data, registry
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +59,9 @@ def make_fast_preprocessor_pipeline(columns_to_merge_for_training:typing.List[st
     basic_preproc = BasicPreprocessing()
     concat_columns = ConcatColumns(columns=columns_to_merge_for_training)
 
-    folder =  "data/cache/"
+    folder =  "/tmp/data/"
+    if not os.path.exists(folder):
+        os.mkdir(folder)
 
     basic_preproc_filename = f"{folder}basic_preproc.parquet"
     concat_columns_filename = f"{folder}concat_columns_{'_'.join(columns_to_merge_for_training)}.parquet"
@@ -92,14 +94,14 @@ if __name__ == "__main__":
     # train_recipe_df = recipe_df_ori.iloc[0:train_size]
     # test_recipe_df  = recipe_df_ori.iloc[train_size+1:]
 
-    pipeline_pkl_path = 'data/preprocessor_pipeline.pkl'
     recipe_df_ori = rs_data.load_recipes("../batch-1672-recettes-et-sentiments-data/RAW_recipes.csv")
 
-    if os.path.exists(pipeline_pkl_path):
-        logger.info(f"Loading pipeline from {pipeline_pkl_path}")
-        preprocessor_pipeline = joblib.load(pipeline_pkl_path)
-    else:
-        logger.info(f"creating pipeline from {pipeline_pkl_path}")
+
+    preprocessor_pipeline = registry.load_FAST_model()
+
+    if preprocessor_pipeline is None:
+
+        logger.info(f"creating FAST pipeline")
 
         preprocessor_pipeline = make_fast_preprocessor_pipeline(
             columns_to_merge_for_training=["name", "tags", "description", "merged_ingredients"],
@@ -110,11 +112,11 @@ if __name__ == "__main__":
             cache=True
         )
         preprocessor_pipeline.fit(recipe_df_ori)
-        joblib.dump(preprocessor_pipeline, pipeline_pkl_path)
-        logger.info(f"storing pipeline to {pipeline_pkl_path}")
+
+        registry.save_FAST_model(preprocessor_pipeline)
 
 
-    recipe_processed_cache_path = f"data/cache/preproc_recipes_fast_name-tag-desc-ingredients.parquet"
+    recipe_processed_cache_path = f"/tmp/data/cache/preproc_recipes_fast_name-tag-desc-ingredients.parquet"
 
     if os.path.exists(recipe_processed_cache_path):
         logger.info(f"Loading Preprocessed DataFrame from {recipe_processed_cache_path}")
