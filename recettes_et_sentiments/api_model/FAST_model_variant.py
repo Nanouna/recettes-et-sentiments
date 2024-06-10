@@ -134,7 +134,7 @@ if __name__ == "__main__":
     ingredients_text = ' '.join(available_ingredients)
     ingredients_vector = preprocessor_pipeline.named_steps['vectorize_and_combine'].named_transformers_['text']._get_mean_vector(ingredients_text).reshape(1, -1)
 
-    similarities = cosine_similarity(ingredients_vector, np.vstack(recipe_processed['vector'].values))
+    similarities = cosine_similarity(ingredients_vector, np.vstack(recipe_processed.iloc[:, :2000].values))
     top_indices = similarities.argsort()[0][-5:]  # Top 5 similar recipes
 
     recommended_recipes = recipe_processed.iloc[top_indices]
