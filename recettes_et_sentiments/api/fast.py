@@ -18,8 +18,8 @@ app.add_middleware(
 )
 
 
-app.state.model_fast = load_model("model_fast")
-app.state.recipe_processed = pd.read_parquet("/tmp/data/preproc_recipes_fast_name-tag-desc-ingredients.parquet")
+#app.state.model_fast = load_model("model_fast")
+#app.state.recipe_processed = pd.read_parquet("/tmp/data/preproc_recipes_fast_name-tag-desc-ingredients.parquet")
 
 @app.get("/model_fast")
 def model_fast(query:str):
