@@ -1,3 +1,4 @@
+import os
 import ast
 import logging
 import pandas as pd
@@ -71,17 +72,29 @@ def add_columns_and_merge_text(df:pd.DataFrame) -> pd.DataFrame:
 
     return df
 
-def load_recipes(path: str) -> pd.DataFrame:
+def load_recipes(path: str, store_parquet_path_prefix="/tmp/data/") -> pd.DataFrame:
     """
     load csv files
     """
     logger.info(f"loading '{path}'")
+    # ex: "../batch-1672-recettes-et-sentiments-data/RAW_recipes.csv"
+    base_name = os.path.splitext(os.path.basename(path))[0]  # Obtenir le nom de base sans l'extension
+    new_file_name = base_name + ".parquet"
+
+    parquet_path = f"{store_parquet_path_prefix}{new_file_name}"
+
+    if os.path.exists(parquet_path):
+        return pd.read_parquet(parquet_path)
+
     df = pd.read_csv(path,
                      parse_dates=['submitted'],
                      engine='python')
     logger.info(f"loading '{path}' done.")
 
-    return add_columns_and_merge_text(df)
+    processed_df = add_columns_and_merge_text(df)
+    processed_df.to_parquet(parquet_path, index=True)
+
+    return processed_df
 
 def get_y(df_recipe: pd.DataFrame, df_reviews : pd.DataFrame) -> pd.DataFrame:
     """

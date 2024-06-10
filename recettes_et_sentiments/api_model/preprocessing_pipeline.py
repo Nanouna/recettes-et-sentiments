@@ -71,9 +71,7 @@ class ConcatColumns(BaseEstimator, TransformerMixin):
 
     def transform(self, X):
         logger.info("Transforming data with ConcatColumns")
-        X = X.copy()
-        X['tags'].apply(lambda x: ' '.join(x))
-        return preprocessing.concat_columns(X, self.columns, self.dropSourceColumn)
+        return preprocessing.concat_columns(X.copy(), self.columns, self.dropSourceColumn)
 
     def get_feature_names_out(self):
         pass
