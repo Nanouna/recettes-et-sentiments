@@ -132,7 +132,7 @@ if __name__ == "__main__":
         logger.info(f"Storing Preprocessed DataFrame to {recipe_processed_cache_path}")
 
 
-    available_ingredients = ['tomato', 'feta cheese', 'basil', 'fried']
+    available_ingredients = ['burrito', 'porc', 'feta']
 
     # Transform ingredients to vector
     ingredients_text = ' '.join(available_ingredients)
