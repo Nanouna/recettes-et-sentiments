@@ -88,6 +88,21 @@ def make_fast_preprocessor_pipeline(columns_to_merge_for_training:typing.List[st
     return preprocessing_pipeline
 
 
+def find_recipie_with_similar_elements_model_fast(query:str, model_fast, recipe_processed):
+
+    ingredients_vector = model_fast.named_steps['vectorize_and_combine'].named_transformers_['text']._get_mean_vector(query).reshape(1, -1)
+
+    similarities = cosine_similarity(ingredients_vector, np.vstack(recipe_processed.iloc[:, :2000].values))
+
+    top_indices = similarities.argsort()[0][-5:]  # Top 5 similar recipes
+
+    recommended_recipes_id = recipe_processed.iloc[top_indices]['id']
+
+    return recommended_recipes_id
+
+
+
+
 if __name__ == "__main__":
 
     # train_size = int(recipe_df_ori.shape[0] * 0.8)
