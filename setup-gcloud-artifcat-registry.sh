@@ -1,6 +1,8 @@
 #!/bin/sh
 
+ENV_FILE="Docker/.env.yaml"
 GCP_REGION=$(yq e '.GCP_REGION' $ENV_FILE)
+
 echo gcloud auth configure-docker $GCP_REGION-docker.pkg.dev
 gcloud auth configure-docker $GCP_REGION-docker.pkg.dev
 
