@@ -1,0 +1,6 @@
+#!/bin/sh
+
+GAR_IMAGE=$(yq e '.GAR_IMAGE' $ENV_FILE)
+GAR_MEMORY=$(yq e '.GAR_MEMORY' $ENV_FILE)
+
+docker build -t $GCP_REGION-docker.pkg.dev/$GCP_PROJECT_ID/$DOCKER_REPO_NAME/$DOCKER_IMAGE_NAME:0.1 .
