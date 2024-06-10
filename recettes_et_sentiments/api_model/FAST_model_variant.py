@@ -123,6 +123,7 @@ if __name__ == "__main__":
     else:
         logger.info(f"Creating Preprocessed DataFrame")
         recipe_processed = preprocessor_pipeline.transform(recipe_df_ori)
+        print(recipe_processed.head())
         recipe_processed.to_parquet(recipe_processed_cache_path)
         logger.info(f"Storing Preprocessed DataFrame to {recipe_processed_cache_path}")
 
