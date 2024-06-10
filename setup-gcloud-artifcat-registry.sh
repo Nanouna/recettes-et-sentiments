@@ -7,4 +7,4 @@ DOCKER_REPO_NAME=recettes-et-sentiments
 gcloud artifacts repositories create $DOCKER_REPO_NAME \
   --repository-format=docker \
   --location=$GCP_REGION  \
-  --description="Docker images in GAR"
+  --description="Docker images in GAR for recettes-et-sentiments"
