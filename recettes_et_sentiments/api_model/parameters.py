@@ -71,3 +71,5 @@ N_STEPS_CLIP_UPPER=40
 W2V_VECTOR_SIZE = 100
 W2V_WINDOW = 5
 W2V_MIN_COUNT = 1
+
+KNN_N_NEIGHBORS = 3 # should not be inferior to 2. 1 would return itself
