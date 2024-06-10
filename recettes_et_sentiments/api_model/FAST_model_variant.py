@@ -116,7 +116,7 @@ if __name__ == "__main__":
         registry.save_model(preprocessor_pipeline, model_name="model_fast")
 
 
-    recipe_processed_cache_path = f"/tmp/data/cache/preproc_recipes_fast_name-tag-desc-ingredients.parquet"
+    recipe_processed_cache_path = f"/tmp/data/preproc_recipes_fast_name-tag-desc-ingredients.parquet"
 
     if os.path.exists(recipe_processed_cache_path):
         logger.info(f"Loading Preprocessed DataFrame from {recipe_processed_cache_path}")
