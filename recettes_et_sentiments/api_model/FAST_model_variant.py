@@ -97,7 +97,7 @@ if __name__ == "__main__":
     recipe_df_ori = rs_data.load_recipes("../batch-1672-recettes-et-sentiments-data/RAW_recipes.csv")
 
 
-    preprocessor_pipeline = registry.load_FAST_model()
+    preprocessor_pipeline = registry.load_model(model_name="model_fast")
 
     if preprocessor_pipeline is None:
 
@@ -113,7 +113,7 @@ if __name__ == "__main__":
         )
         preprocessor_pipeline.fit(recipe_df_ori)
 
-        registry.save_FAST_model(preprocessor_pipeline)
+        registry.save_model(preprocessor_pipeline, model_name="model_fast")
 
 
     recipe_processed_cache_path = f"/tmp/data/cache/preproc_recipes_fast_name-tag-desc-ingredients.parquet"
