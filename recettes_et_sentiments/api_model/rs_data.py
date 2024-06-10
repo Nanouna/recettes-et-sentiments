@@ -77,15 +77,18 @@ def load_recipes(path: str, store_parquet_path_prefix="/tmp/data/") -> pd.DataFr
     load csv files
     """
     logger.info(f"loading '{path}'")
+
     # ex: "../batch-1672-recettes-et-sentiments-data/RAW_recipes.csv"
     base_name = os.path.splitext(os.path.basename(path))[0]  # Obtenir le nom de base sans l'extension
     new_file_name = base_name + ".parquet"
 
     parquet_path = f"{store_parquet_path_prefix}{new_file_name}"
-
+    logger.info(f"checking if parquet with added columns and merged text exist in {parquet_path}")
     if os.path.exists(parquet_path):
+        logger.info(f"{parquet_path} found - reading and returning the file")
         return pd.read_parquet(parquet_path)
 
+    logger.info(f"{parquet_path} not found - generating parquet file")
     df = pd.read_csv(path,
                      parse_dates=['submitted'],
                      engine='python')
@@ -93,6 +96,8 @@ def load_recipes(path: str, store_parquet_path_prefix="/tmp/data/") -> pd.DataFr
 
     processed_df = add_columns_and_merge_text(df)
     processed_df.to_parquet(parquet_path, index=True)
+
+    logger.info(f"{parquet_path} saved")
 
     return processed_df
 
