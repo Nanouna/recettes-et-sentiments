@@ -11,3 +11,5 @@ GAR_IMAGE_VERSION=$(yq e '.GAR_IMAGE_VERSION' $ENV_FILE)
 
 echo docker build -t $GCP_REGION-docker.pkg.dev/$GCP_PROJECT_ID/$DOCKER_REPO_NAME/$GAR_IMAGE:$GAR_IMAGE_VERSION -f Docker/Dockerfile .
 docker build -t $GCP_REGION-docker.pkg.dev/$GCP_PROJECT_ID/$DOCKER_REPO_NAME/$GAR_IMAGE:$GAR_IMAGE_VERSION -f Docker/Dockerfile .
+
+docker push $GCP_REGION-docker.pkg.dev/$GCP_PROJECT_ID/$DOCKER_REPO_NAME/$GAR_IMAGE:$GAR_IMAGE_VERSION
