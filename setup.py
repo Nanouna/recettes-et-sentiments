@@ -11,7 +11,8 @@ def parse_requirements(filename):
 setup(
     name='recettes_et_sentiments',
     version='0.1',
+    license="MIT",
+    author="Marie-Anne André - https://github.com/Nanouna; Théo Rosen - https://github.com/ ?  ;Thomas Manson - https://github.com/dev-mansonthomas",
     packages=find_packages(),
-#   package_dir={'': '.'},
     install_requires=parse_requirements('requirements.txt'),
 )
