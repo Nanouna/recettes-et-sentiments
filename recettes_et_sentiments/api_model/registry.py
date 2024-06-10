@@ -5,19 +5,21 @@ from sklearn.pipeline import Pipeline
 
 logger = logging.getLogger(__name__)
 
-pipeline_FAST_pkl_path = 'data/preprocessor_pipeline.pkl'
+def load_model(model_name:str, prefix:str="/tmp/data")-> Pipeline:
 
-def load_FAST_model(prefix:str="/tmp/")-> Pipeline:
+    model_path = f"{prefix}{model_name}.pkl"
 
-    if os.path.exists(f"{prefix}{pipeline_FAST_pkl_path}"):
-        logger.info(f"Loading pipeline FAST from {prefix}{pipeline_FAST_pkl_path}")
-        return joblib.load(f"{prefix}{pipeline_FAST_pkl_path}")
+    if os.path.exists(model_path):
+        logger.info(f"Loading pipeline FAST from {model_path}")
+        return joblib.load(f"{model_path}")
     else:
-        logger.info(f"pipeline FAST not found at {prefix}{pipeline_FAST_pkl_path}")
+        logger.info(f"pipeline FAST not found at {model_path}")
         return None
 
+def save_model(preprocessor_pipeline, model_name:str, prefix:str="/tmp/data"):
 
-def save_FAST_model(preprocessor_pipeline, prefix:str="/tmp/"):
-    logger.info(f"Saving pipeline FAST to {prefix}{pipeline_FAST_pkl_path}")
-    joblib.dump(preprocessor_pipeline, f"{prefix}{pipeline_FAST_pkl_path}")
-    logger.info(f"Saving pipeline FAST to {prefix}{pipeline_FAST_pkl_path} - DONE")
+    model_path = f"{prefix}{model_name}.pkl"
+
+    logger.info(f"Saving pipeline FAST to {model_path}")
+    joblib.dump(preprocessor_pipeline, f"{model_path}")
+    logger.info(f"Saving pipeline FAST to {model_path} - DONE")
