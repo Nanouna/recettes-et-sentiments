@@ -101,7 +101,7 @@ if __name__ == "__main__":
 
     if preprocessor_pipeline is None:
 
-        logger.info(f"creating FAST pipeline")
+        logger.info(f"creating FAST model")
 
         preprocessor_pipeline = make_fast_preprocessor_pipeline(
             columns_to_merge_for_training=["name", "tags", "description", "merged_ingredients"],
@@ -115,25 +115,30 @@ if __name__ == "__main__":
 
         registry.save_model(preprocessor_pipeline, model_name="model_fast")
 
+        logger.info(f"FAST model - DONE and saved")
 
-    recipe_processed_cache_path = f"/tmp/data/cache/preproc_recipes_fast_name-tag-desc-ingredients.parquet"
+
+    recipe_processed_cache_path = f"/tmp/data/preproc_recipes_fast_name-tag-desc-ingredients.parquet"
 
     if os.path.exists(recipe_processed_cache_path):
         logger.info(f"Loading Preprocessed DataFrame from {recipe_processed_cache_path}")
+        recipe_processed = pd.read_parquet(recipe_processed_cache_path)
+        logger.info(f"Loading Preprocessed DataFrame from {recipe_processed_cache_path} - DONE")
     else:
         logger.info(f"Creating Preprocessed DataFrame")
         recipe_processed = preprocessor_pipeline.transform(recipe_df_ori)
+        print(recipe_processed.head())
         recipe_processed.to_parquet(recipe_processed_cache_path)
         logger.info(f"Storing Preprocessed DataFrame to {recipe_processed_cache_path}")
 
 
-    available_ingredients = ['tomato', 'cheese', 'basil']
+    available_ingredients = ['burrito', 'porc', 'feta']
 
     # Transform ingredients to vector
     ingredients_text = ' '.join(available_ingredients)
     ingredients_vector = preprocessor_pipeline.named_steps['vectorize_and_combine'].named_transformers_['text']._get_mean_vector(ingredients_text).reshape(1, -1)
 
-    similarities = cosine_similarity(ingredients_vector, np.vstack(recipe_processed['vector'].values))
+    similarities = cosine_similarity(ingredients_vector, np.vstack(recipe_processed.iloc[:, :2000].values))
     top_indices = similarities.argsort()[0][-5:]  # Top 5 similar recipes
 
     recommended_recipes = recipe_processed.iloc[top_indices]
