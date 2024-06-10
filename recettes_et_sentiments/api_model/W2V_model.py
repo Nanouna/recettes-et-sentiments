@@ -37,7 +37,7 @@ def embed_sentence(word2vec_model: Word2Vec, text_elements : list) -> list:
     vectors = [word2vec_model.wv[word] for word in text_elements if word in word2vec_model.wv.key_to_index]
     return np.mean(np.vstack(vectors), axis=0) if vectors else np.zeros(parameters.W2V_VECTOR_SIZE)
 
-def embedding(word2vec_model : Word2Vec, sentences:list) -> list:
+def embedding(word2vec_model : Word2Vec, text_elements:list) -> list:
     '''
     Vectorization of all recipes text elements as list
 
@@ -46,7 +46,7 @@ def embedding(word2vec_model : Word2Vec, sentences:list) -> list:
     return list of one vector by recipe
     '''
     logger.info("Vectorization and averaging started")
-    list_vectors = [embed_sentence(word2vec_model, sentence) for sentence in sentences]
+    list_vectors = [embed_sentence(word2vec_model, text) for text in text_elements]
     logger.info("Vectorization and averaging completed")
     return list_vectors
 
@@ -93,7 +93,9 @@ def recommend_recipe_from_another(model, data: pd.DataFrame, processed_col:str, 
     """
     KNN kneighbors using an existing recipe_id as reference
     """
+    logger.info("Looking for recommendation based on recipe")
     recipe_index = data.index.get_loc(entry_recipe_id)
+
     distances, indices = model.kneighbors([data.iloc[recipe_index][processed_col+'_vector']])
     logger.info(indices)
     logger.info(distances)
@@ -101,9 +103,21 @@ def recommend_recipe_from_another(model, data: pd.DataFrame, processed_col:str, 
         return None
     return indices[0][1], data.iloc[indices[0][1]]
 
+def recommend_recipe_from_custom_input(W2V_model: Word2Vec,
+                                       KNN_model : NearestNeighbors,
+                                       data: pd.DataFrame,
+                                       elements_list: list
+                                       ) -> pd.DataFrame:
+    vectors = pd.DataFrame(embed_sentence(W2V_model, elements_list)).T
+    logger.info("Looking for recommendation based on curstom input")
+    distances, indices = KNN_model.kneighbors(vectors,
+                                              n_neighbors=parameters.KNN_N_NEIGHBORS - 1
+                                              )
+
+    return pd.DataFrame(data.iloc[indices[0]])
+
+
 if __name__ == "__main__":
-
-
 
     data = pd.read_parquet('../batch-1672-recettes-et-sentiments-data/last_preproc_we_hope.parquet')
 
