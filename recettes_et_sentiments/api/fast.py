@@ -59,19 +59,19 @@ def model_fast(recipe_id:int):
         'recommended_recipe_url': f"https://www.food.com/recipe/*-{recommended_recipe_id}"
     }
 
-
+# http://localhost:8000/model_w2vec_query_recipe?query=christmas%20gifts%20chocolate%20healthy
 @app.get("/model_w2vec_query_recipe")
 def model_fast(query:str):
     # in real world, we would check the input
     recipes_with_vectors, word2vec_model = W2V_model.preprocess_data(pd.DataFrame(), 'tags')
     KNN_model = W2V_model.instantiate_model(recipes_with_vectors, 'tags')
-    recommended_recipe_custom = W2V_model.recommend_recipe_from_custom_input(word2vec_model, KNN_model, recipes_with_vectors, ['christmas', 'gifts', 'chocolate', 'healthy'])
+    recommended_recipe_custom = W2V_model.recommend_recipe_from_custom_input(word2vec_model, KNN_model, recipes_with_vectors, query.split())
 
     return {
         'query': query,
         'recommended_recipe_id': recommended_recipe_custom.to_json(),
         'recommended_recipe_title': 0,
-        'recommended_recipe_url': f"https://www.food.com/recipe/*-{recommended_recipe_id}"
+        'recommended_recipe_url': f"https://www.food.com/recipe/*-"
     }
 
 
