@@ -61,7 +61,7 @@ def preprocess_data(data: pd.DataFrame, column_to_process: str)-> typing.Union[p
 
     if word2vec_model is None:
         word2vec_model = train_word2vec(data[column_to_process])
-        save_model(word2vec_model_cache_path)
+        save_model(word2vec_model, word2vec_model_cache_path)
 
 
     word2vec_df_cache_path = f"/tmp/data/w2vec_df_{column_to_process}.parquet"
@@ -85,20 +85,21 @@ def instantiate_model(data: pd.DataFrame, column_to_process:str):
     if knn_model is None:
         knn_model = NearestNeighbors(n_neighbors=2, radius=0.4)
         knn_model.fit(np.array(data[column_to_process+'_vector'].tolist()))
-        save_model(knn_model_cache_path)
+        save_model(knn_model, knn_model_cache_path)
 
     return knn_model
 
-def recommend_recipe_from_another(model, data: pd.DataFrame, processed_col:str, entry_recipe_id: int) -> pd.DataFrame:
+def recommend_recipe_from_another(model, data: pd.DataFrame, processed_col:str, entry_recipe_id: int) -> typing.Union[int, pd.DataFrame]:
     """
     KNN kneighbors using an existing recipe_id as reference
     """
     recipe_index = data.index.get_loc(entry_recipe_id)
     distances, indices = model.kneighbors([data.iloc[recipe_index][processed_col+'_vector']])
-
+    logger.info(indices)
+    logger.info(distances)
     if len(indices[0]) < 2:
         return None
-    return data.iloc[indices[0][1]]
+    return indices[0][1], data.iloc[indices[0][1]]
 
 if __name__ == "__main__":
 
