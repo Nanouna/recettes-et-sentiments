@@ -14,6 +14,6 @@ GAR_MEMORY=$(yq e '.GAR_MEMORY' $ENV_FILE)
 gcloud run deploy --image $GCP_REGION-docker.pkg.dev/$GCP_PROJECT_ID/$DOCKER_REPO_NAME/$GAR_IMAGE:$GAR_IMAGE_VERSION \
    --memory $GAR_MEMORY \
    --region $GCP_REGION \
-   --env-vars-file ./docker/.env.yaml \
+   --env-vars-file ./Docker/.env.yaml \
    --allow-unauthenticated \
    $GAR_IMAGE
