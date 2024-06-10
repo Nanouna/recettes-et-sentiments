@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 def save_to_parquet(df, filename):
     logger.info(f"Saving DataFrame to {filename}")
-    df.to_parquet(filename, index=False)
+    df.to_parquet(filename, index=True)
     return df
 
 def load_from_parquet(filename):
