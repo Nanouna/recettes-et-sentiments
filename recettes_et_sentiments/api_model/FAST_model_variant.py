@@ -89,7 +89,7 @@ if __name__ == "__main__":
     recipe_df_ori = rs_data.load_recipes("../../../batch-1672-recettes-et-sentiments-data/RAW_recipes.csv")
 
     preprocessor_pipeline = make_fast_preprocessor_pipeline(
-        columns_to_merge_for_training=["name", "tag", "description", "merged_ingredients"],
+        columns_to_merge_for_training=["name", "tags", "description", "merged_ingredients"],
         vector_size=2000,
         window=10,
         min_count=1,
@@ -104,5 +104,7 @@ if __name__ == "__main__":
     recipe_processed = preprocessor_pipeline.fit_transform(recipe_df_ori)
     recipe_processed.to_parquet(f"../batch-1672-recettes-et-sentiments-data/preproc_recipes_fast_name-tag-desc-ingredients.parquet")
 
+
+    available_ingredients = ['tomato', 'cheese', 'basil']
 
     #preprocessor_pipeline.transform()
