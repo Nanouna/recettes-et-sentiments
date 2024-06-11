@@ -37,7 +37,13 @@ def model_fast(query:str):
         logger.error(error_message, error_message)
         raise HTTPException(status_code=503, detail=error_message)
 
-    result = find_recipie_with_similar_elements_model_fast(query=query, model_fast=app.state.model_fast, recipe_processed=app.state.recipe_processed)
+    logger.info(f"type(app.state.model_fast)={app.state.model_fast}")
+    logger.info(f"type(app.state.recipe_processed)={app.state.recipe_processed}")
+    result = find_recipie_with_similar_elements_model_fast(
+        query=query,
+        model_fast=app.state.model_fast,
+        recipe_processed=app.state.recipe_processed
+    )
 
     suggestions = []
     for index, row in result.iterrows():
