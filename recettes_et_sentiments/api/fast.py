@@ -6,7 +6,7 @@ logger = logging.getLogger(__name__)
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from recettes_et_sentiments.api_model.registry import load_model
+from recettes_et_sentiments.api_model import registry
 from recettes_et_sentiments.api_model.FAST_model_variant import find_recipie_with_similar_elements_model_fast
 from recettes_et_sentiments.api_model import W2V_model
 
@@ -24,7 +24,7 @@ app.add_middleware(
 )
 
 
-app.state.model_fast = load_model("model_fast")
+app.state.model_fast = registry.load_model(model_name="model_fast")
 if app.state.model_fast is not None:
     app.state.recipe_processed = pd.read_parquet("/tmp/data/preproc_recipes_fast_name-tag-desc-ingredients.parquet")
 
