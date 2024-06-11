@@ -89,32 +89,35 @@ def instantiate_model(data: pd.DataFrame, column_to_process:str):
 
     return knn_model
 
-def recommend_recipe_from_another(model, data: pd.DataFrame, processed_col:str, entry_recipe_id: int) -> typing.Union[int, pd.DataFrame]:
+def recommend_recipe_from_another(model, data: pd.DataFrame, processed_col:str, entry_recipe_id: int) -> pd.DataFrame:
     """
     KNN kneighbors using an existing recipe_id as reference
     """
-    logger.info("Looking for recommendation based on recipe")
+    logger.info(f"Looking for recommendation based on recipe based on recipe id {entry_recipe_id}")
     recipe_index = data.index.get_loc(entry_recipe_id)
 
-    distances, indices = model.kneighbors([data.iloc[recipe_index][processed_col+'_vector']])
-    logger.info(indices)
-    logger.info(distances)
+    distances, indices = model.kneighbors(
+        [data.iloc[recipe_index][processed_col+'_vector']],
+        n_neighbors=parameters.KNN_N_NEIGHBORS
+        )
+
     if len(indices[0]) < 2:
         return None
-    return indices[0][1], data.iloc[indices[0][1]]
+
+    return pd.DataFrame(data.iloc[indices[0][1:]])
 
 def recommend_recipe_from_custom_input(W2V_model: Word2Vec,
                                        KNN_model : NearestNeighbors,
                                        data: pd.DataFrame,
-                                       elements_list: list
+                                       custom_input: list
                                        ) -> pd.DataFrame:
-    vectors = pd.DataFrame(embed_sentence(W2V_model, elements_list)).T
-    logger.info("Looking for recommendation based on curstom input")
+    vectors = pd.DataFrame(embed_sentence(W2V_model, custom_input)).T
+    logger.info(f"Looking for recommendation based on curstom input {custom_input}")
     distances, indices = KNN_model.kneighbors(vectors,
                                               n_neighbors=parameters.KNN_N_NEIGHBORS - 1
                                               )
 
-    return pd.DataFrame(data.iloc[indices[0]])
+    return pd.DataFrame(data.iloc[indices[0][1:]])
 
 
 if __name__ == "__main__":

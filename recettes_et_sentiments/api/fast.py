@@ -47,17 +47,28 @@ def model_fast(recipe_id:int):
 
     recipes_with_vectors, word2vec_model = W2V_model.preprocess_data(pd.DataFrame(), 'tags')
     KNN_model = W2V_model.instantiate_model(recipes_with_vectors, 'tags')
-    recommended_recipe_id, recommended_recipe = W2V_model.recommend_recipe_from_another(KNN_model, recipes_with_vectors, 'tags', entry_recipe_id=recipe_id)
+    recommended_recipes = W2V_model.recommend_recipe_from_another(KNN_model, recipes_with_vectors, 'tags', entry_recipe_id=recipe_id)
 
     # recommended_recipe[['tags']] = recommended_recipe[['tags']].apply(lambda x:', '.join(x))
 
+    suggestions = []
+    for index, row in recommended_recipes.iterrows():
+        suggestions.append(
+            [
+                index,
+                row['name'],
+                f"https://www.food.com/recipe/*-{index}"
+             ]
+            )
 
+
+    # print(recommended_recipes)
     return {
         'query': recipe_id,
-        'recommended_recipe_id': int(recommended_recipe_id),
-        'recommended_recipe_title': recommended_recipe.iloc[0],
-        'recommended_recipe_url': f"https://www.food.com/recipe/*-{recommended_recipe_id}"
+        'suggestions':suggestions
     }
+
+
 
 # http://localhost:8000/model_w2vec_query_recipe?query=christmas%20gifts%20chocolate%20healthy
 @app.get("/model_w2vec_query_recipe")
@@ -67,11 +78,19 @@ def model_fast(query:str):
     KNN_model = W2V_model.instantiate_model(recipes_with_vectors, 'tags')
     recommended_recipe_custom = W2V_model.recommend_recipe_from_custom_input(word2vec_model, KNN_model, recipes_with_vectors, query.split())
 
+    suggestions = []
+    for index, row in recommended_recipe_custom.iterrows():
+        suggestions.append(
+            [
+                index,
+                row['name'],
+                f"https://www.food.com/recipe/*-{index}"
+             ]
+            )
+
     return {
         'query': query,
-        'recommended_recipe_id': recommended_recipe_custom.to_json(),
-        'recommended_recipe_title': 0,
-        'recommended_recipe_url': f"https://www.food.com/recipe/*-"
+        'suggestions': suggestions
     }
 
 
