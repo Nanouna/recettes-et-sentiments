@@ -2,7 +2,7 @@ import os
 import logging
 import joblib
 from sklearn.pipeline import Pipeline
-from recettes_et_sentiments.api_model.FAST_model_variant import FastVectorizer
+import pickle
 
 logger = logging.getLogger(__name__)
 
@@ -26,3 +26,29 @@ def save_model(model, model_name:str, prefix:str="/tmp/data/"):
     logger.info(f"Saving model to {model_path}")
     joblib.dump(model, f"{model_path}")
     logger.info(f"Saving model to {model_path} - DONE")
+
+
+
+
+class CustomUnpickler(pickle.Unpickler):
+    def find_class(self, module, name):
+        if name == 'FastVectorizer':
+            from recettes_et_sentiments.api_model.FAST_model_variant import FastVectorizer
+            return FastVectorizer
+        return super().find_class(module, name)
+
+
+
+def load_fast_model(model_name:str, prefix:str="/tmp/data/")-> Pipeline:
+
+    model_path = f"{prefix}{model_name}.pkl"
+
+    if os.path.exists(model_path):
+        logger.info(f"Loading model from {model_path}")
+        with open(model_path, 'rb') as f:
+            model = CustomUnpickler(f).load()
+        logger.info(f"Loading model from {model_path} - DONE")
+        return model
+    else:
+        logger.info(f"model not found at {model_path}")
+        return None

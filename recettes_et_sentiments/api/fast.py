@@ -24,7 +24,7 @@ app.add_middleware(
 )
 
 
-app.state.model_fast = registry.load_model(model_name="model_fast")
+app.state.model_fast = registry.load_fast_model(model_name="model_fast")
 if app.state.model_fast is not None:
     app.state.recipe_processed = pd.read_parquet("/tmp/data/preproc_recipes_fast_name-tag-desc-ingredients.parquet")
 
