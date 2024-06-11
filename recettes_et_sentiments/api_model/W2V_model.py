@@ -124,9 +124,15 @@ if __name__ == "__main__":
 
     data = pd.read_parquet('../batch-1672-recettes-et-sentiments-data/last_preproc_we_hope.parquet')
 
+    print("from recipe id 308080")
     recipes_with_vectors, word2vec_model = preprocess_data(data, 'tags')
     KNN_model = instantiate_model(recipes_with_vectors, 'tags')
     recommended_recipe = recommend_recipe_from_another(KNN_model, recipes_with_vectors, 'tags', entry_recipe_id=308080)
 
 
     print(recommended_recipe)
+
+    print("from recipe tags 'christmas', 'gifts', 'chocolate', 'healthy'")
+    recommended_recipe_custom = recommend_recipe_from_custom_input(word2vec_model, KNN_model, recipes_with_vectors, ['christmas', 'gifts', 'chocolate', 'healthy'])
+
+    print(recommended_recipe_custom)

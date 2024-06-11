@@ -4,7 +4,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from recettes_et_sentiments.api_model.registry import load_model
 from recettes_et_sentiments.api_model.FAST_model_variant import find_recipie_with_similar_elements_model_fast
@@ -46,17 +46,23 @@ app.state.knn_model = W2V_model.instantiate_model(app.state.recipes_with_vectors
 def model_fast(recipe_id:int):
 
     logger.info(f"model_w2vec_similar_to_recipe(recipe_id={recipe_id})")
-    recommended_recipes = W2V_model.recommend_recipe_from_another(app.state.knn_model, app.state.recipes_with_vectors, 'tags', entry_recipe_id=recipe_id)
-
     suggestions = []
-    for index, row in recommended_recipes.iterrows():
-        suggestions.append(
-            [
-                index,
-                row['name'],
-                f"https://www.food.com/recipe/*-{index}"
-             ]
-            )
+    try:
+        recommended_recipes = W2V_model.recommend_recipe_from_another(app.state.knn_model, app.state.recipes_with_vectors, 'tags', entry_recipe_id=recipe_id)
+        for index, row in recommended_recipes.iterrows():
+            suggestions.append(
+                [
+                    index,
+                    row['name'],
+                    f"https://www.food.com/recipe/*-{index}"
+                ]
+                )
+    except KeyError as key_error:
+        error_message = f"The recipe_id={recipe_id} has not been found"
+        logger.error(error_message, key_error)
+        raise HTTPException(status_code=404, detail=error_message)
+
+
 
     logger.info(f"model_w2vec_similar_to_recipe(recipe_id={recipe_id}) -> {suggestions}")
     return {
@@ -72,12 +78,15 @@ def model_fast(query:str):
     # in real world, we would check the input
     logger.info(f"model_w2vec_similar_to_recipe(query={query})")
 
+
     recommended_recipe_custom = W2V_model.recommend_recipe_from_custom_input(
         app.state.word2vec_model,
         app.state.knn_model,
         app.state.recipes_with_vectors,
         query.split()
         )
+
+
 
     suggestions = []
     for index, row in recommended_recipe_custom.iterrows():
