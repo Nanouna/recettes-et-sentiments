@@ -38,18 +38,15 @@ def model_fast(query:str):
     }
 
 
+app.state.recipes_with_vectors, app.state.word2vec_model = W2V_model.preprocess_data(pd.DataFrame(), 'tags')
+app.state.knn_model = W2V_model.instantiate_model(app.state.recipes_with_vectors, 'tags')
 
 # http://localhost:8000/model_w2vec_similar_to_recipe?recipe_id=20374
 @app.get("/model_w2vec_similar_to_recipe")
 def model_fast(recipe_id:int):
-    # in real world, we would check the input
 
-
-    recipes_with_vectors, word2vec_model = W2V_model.preprocess_data(pd.DataFrame(), 'tags')
-    KNN_model = W2V_model.instantiate_model(recipes_with_vectors, 'tags')
-    recommended_recipes = W2V_model.recommend_recipe_from_another(KNN_model, recipes_with_vectors, 'tags', entry_recipe_id=recipe_id)
-
-    # recommended_recipe[['tags']] = recommended_recipe[['tags']].apply(lambda x:', '.join(x))
+    logger.info(f"model_w2vec_similar_to_recipe(recipe_id={recipe_id})")
+    recommended_recipes = W2V_model.recommend_recipe_from_another(app.state.knn_model, app.state.recipes_with_vectors, 'tags', entry_recipe_id=recipe_id)
 
     suggestions = []
     for index, row in recommended_recipes.iterrows():
@@ -61,8 +58,7 @@ def model_fast(recipe_id:int):
              ]
             )
 
-
-    # print(recommended_recipes)
+    logger.info(f"model_w2vec_similar_to_recipe(recipe_id={recipe_id}) -> {suggestions}")
     return {
         'query': recipe_id,
         'suggestions':suggestions
@@ -74,9 +70,14 @@ def model_fast(recipe_id:int):
 @app.get("/model_w2vec_query_recipe")
 def model_fast(query:str):
     # in real world, we would check the input
-    recipes_with_vectors, word2vec_model = W2V_model.preprocess_data(pd.DataFrame(), 'tags')
-    KNN_model = W2V_model.instantiate_model(recipes_with_vectors, 'tags')
-    recommended_recipe_custom = W2V_model.recommend_recipe_from_custom_input(word2vec_model, KNN_model, recipes_with_vectors, query.split())
+    logger.info(f"model_w2vec_similar_to_recipe(query={query})")
+
+    recommended_recipe_custom = W2V_model.recommend_recipe_from_custom_input(
+        app.state.word2vec_model,
+        app.state.knn_model,
+        app.state.recipes_with_vectors,
+        query.split()
+        )
 
     suggestions = []
     for index, row in recommended_recipe_custom.iterrows():
@@ -87,6 +88,8 @@ def model_fast(query:str):
                 f"https://www.food.com/recipe/*-{index}"
              ]
             )
+
+    logger.info(f"model_w2vec_similar_to_recipe(query={query}) -> {suggestions}")
 
     return {
         'query': query,
