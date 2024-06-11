@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from recettes_et_sentiments.api_model import registry
-from recettes_et_sentiments.api_model.FAST_model_variant import find_recipie_with_similar_elements_model_fast
+from recettes_et_sentiments.api_model.FAST_model_variant import find_recipie_with_similar_elements_model_fast, FastVectorizer
 from recettes_et_sentiments.api_model import W2V_model
 
 
