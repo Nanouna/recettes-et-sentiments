@@ -1,5 +1,6 @@
 import pandas as pd
 import logging
+import joblib
 
 logger = logging.getLogger(__name__)
 
@@ -7,8 +8,9 @@ logger = logging.getLogger(__name__)
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from recettes_et_sentiments.api_model import registry
-from recettes_et_sentiments.api_model.FAST_model_variant import find_recipie_with_similar_elements_model_fast, FastVectorizer
+from recettes_et_sentiments.api_model.FAST_model_variant import find_recipie_with_similar_elements
 from recettes_et_sentiments.api_model import W2V_model
+from recettes_et_sentiments.api_model.fast_vectorizer import FastVectorizer
 
 
 
@@ -24,25 +26,27 @@ app.add_middleware(
 )
 
 
-app.state.model_fast = registry.load_fast_model(model_name="model_fast")
-if app.state.model_fast is not None:
-    app.state.recipe_processed = pd.read_parquet("/tmp/data/preproc_recipes_fast_name-tag-desc-ingredients.parquet")
+# app.state.model_fast = registry.load_fast_model(model_name="model_fast")
+# if app.state.model_fast is not None:
+#     app.state.recipe_processed = pd.read_parquet("/tmp/data/preproc_recipes_fast_name-tag-desc-ingredients.parquet")
 
+# http://localhost:8000/model_fast_query_recipe?query=christmas%20gifts%20chocolate%20healthy
 @app.get("/model_fast_query_recipe")
 def model_fast(query:str):
     # in real world, we would check the input
 
-    if app.state.model_fast is None or app.state.recipe_processed is None:
-        error_message = f"Fast Model not found"
-        logger.error(error_message, error_message)
-        raise HTTPException(status_code=503, detail=error_message)
+#     if app.state.model_fast is None or app.state.recipe_processed is None:
+#         error_message = f"Fast Model not found"
+#         logger.error(error_message, error_message)
+#         raise HTTPException(status_code=503, detail=error_message)
 
-    logger.info(f"type(app.state.model_fast)={app.state.model_fast}")
-    logger.info(f"type(app.state.recipe_processed)={app.state.recipe_processed}")
-    result = find_recipie_with_similar_elements_model_fast(
+ #   logger.info(f"type(app.state.model_fast)={type(app.state.model_fast)}")
+ #   logger.info(f"type(app.state.recipe_processed)={type(app.state.recipe_processed)}")
+
+    result = find_recipie_with_similar_elements(
         query=query,
-        model_fast=app.state.model_fast,
-        recipe_processed=app.state.recipe_processed
+#        model_fast=app.state.model_fast,
+#        recipe_processed=app.state.recipe_processed
     )
 
     suggestions = []
@@ -63,8 +67,8 @@ def model_fast(query:str):
     }
 
 
-app.state.recipes_with_vectors, app.state.word2vec_model = W2V_model.preprocess_data(pd.DataFrame(), 'tags')
-app.state.knn_model = W2V_model.instantiate_model(app.state.recipes_with_vectors, 'tags')
+# app.state.recipes_with_vectors, app.state.word2vec_model = W2V_model.preprocess_data(pd.DataFrame(), 'tags')
+# app.state.knn_model = W2V_model.instantiate_model(app.state.recipes_with_vectors, 'tags')
 
 # http://localhost:8000/model_w2vec_similar_to_recipe?recipe_id=20374
 @app.get("/model_w2vec_similar_to_recipe")

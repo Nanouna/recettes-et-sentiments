@@ -6,44 +6,20 @@ import logging
 import numpy as np
 import pandas as pd
 
-from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.metrics.pairwise import cosine_similarity
 
-from gensim.models import FastText
-
-
 from recettes_et_sentiments.api_model.preprocessing_pipeline import CacheStep, BasicPreprocessing, ConcatColumns
 from recettes_et_sentiments.api_model import rs_data, registry
+from recettes_et_sentiments.api_model.fast_vectorizer import FastVectorizer
 
 logger = logging.getLogger(__name__)
 
-class FastVectorizer(BaseEstimator, TransformerMixin):
-    def __init__(self, vector_size=100, window=5, min_count=1, workers=4):
-        self.vector_size = vector_size
-        self.window = window
-        self.min_count = min_count
-        self.workers = workers
-        self.model = None
 
-    def fit(self, X, y=None):
-        sentences = [text.split() for text in X]  # Utiliser les mots déjà prétraités
-        self.model = FastText(sentences, vector_size=self.vector_size, window=self.window, min_count=self.min_count, workers=self.workers)
-        return self
-
-    def transform(self, X):
-        return np.array([self._get_mean_vector(text) for text in X])
-
-    def _get_mean_vector(self, text):
-        words = text.split()  # Utiliser les mots déjà prétraités
-        words = [word for word in words if word in self.model.wv.key_to_index]
-        if len(words) >= 1:
-            return np.mean(self.model.wv[words], axis=0)
-        else:
-            return np.zeros(self.vector_size)
-
-
+def rename_columns(X, original_columns, vector_size):
+    vector_columns = [f'vector_{i}' for i in range(vector_size-len(original_columns))]
+    return pd.DataFrame(X, columns=vector_columns + original_columns)
 
 
 def make_fast_preprocessor_pipeline(columns_to_merge_for_training:typing.List[str],
@@ -88,9 +64,21 @@ def make_fast_preprocessor_pipeline(columns_to_merge_for_training:typing.List[st
     return preprocessing_pipeline
 
 
-def find_recipie_with_similar_elements_model_fast(query:str, model_fast, recipe_processed):
+def find_recipie_with_similar_elements(query:str, model_fast=None, recipe_processed=None):
 
-    ingredients_vector = model_fast.named_steps['vectorize_and_combine'].named_transformers_['text']._get_mean_vector(query).reshape(1, -1)
+    if model_fast is None:
+        model_fast = registry.load_fast_model(model_name="model_fast")
+    if recipe_processed is None:
+        recipe_processed = pd.read_parquet("/tmp/data/preproc_recipes_fast_name-tag-desc-ingredients.parquet")
+
+
+
+    input_name = model_fast.get_inputs()[0].name
+
+
+    ingredients_vector = model_fast.run(None, {input_name: query})
+
+    # ingredients_vector = model_fast.named_steps['vectorize_and_combine'].named_transformers_['text']._get_mean_vector(query).reshape(1, -1)
 
     similarities = cosine_similarity(ingredients_vector, np.vstack(recipe_processed.iloc[:, :2000].values))
 
@@ -112,7 +100,7 @@ if __name__ == "__main__":
     recipe_df_ori = rs_data.load_recipes("../batch-1672-recettes-et-sentiments-data/RAW_recipes.csv")
 
 
-    preprocessor_pipeline = registry.load_model(model_name="model_fast")
+    preprocessor_pipeline = registry.load_fast_model(model_name="model_fast")
 
     if preprocessor_pipeline is None:
 
@@ -120,7 +108,7 @@ if __name__ == "__main__":
 
         preprocessor_pipeline = make_fast_preprocessor_pipeline(
             columns_to_merge_for_training=["name", "tags", "description", "merged_ingredients"],
-            vector_size=2000,
+            vector_size=10,
             window=10,
             min_count=1,
             workers=6,
@@ -128,8 +116,9 @@ if __name__ == "__main__":
         )
         preprocessor_pipeline.fit(recipe_df_ori)
 
-        registry.save_model(preprocessor_pipeline, model_name="model_fast")
-
+        registry.save_fast_model(preprocessor_pipeline, recipe_df_ori.shape, model_name="model_fast")
+        # reload from disk to have deal with the pipeline in the same way (just fitted :  we have a regular pipeline, loaded from disk we must comply with a specific syntax)
+        preprocessor_pipeline = registry.load_fast_model(model_name="model_fast")
         logger.info(f"FAST model - DONE and saved")
 
 
@@ -151,7 +140,10 @@ if __name__ == "__main__":
 
     # Transform ingredients to vector
     ingredients_text = ' '.join(available_ingredients)
-    ingredients_vector = preprocessor_pipeline.named_steps['vectorize_and_combine'].named_transformers_['text']._get_mean_vector(ingredients_text).reshape(1, -1)
+    input_name = preprocessor_pipeline.get_inputs()[0].name
+    ingredients_vector = preprocessor_pipeline.run(None, {input_name: ingredients_text})
+    # ingredients_vector = preprocessor_pipeline.named_steps['vectorize_and_combine'].named_transformers_['text']._get_mean_vector(ingredients_text).reshape(1, -1)
+
 
     similarities = cosine_similarity(ingredients_vector, np.vstack(recipe_processed.iloc[:, :2000].values))
     top_indices = similarities.argsort()[0][-5:]  # Top 5 similar recipes

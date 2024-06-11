@@ -3,6 +3,14 @@ import logging
 import joblib
 from sklearn.pipeline import Pipeline
 import pickle
+from recettes_et_sentiments.api_model.fast_vectorizer import FastVectorizer, CustomUnpickler
+
+import onnx
+import skl2onnx
+from skl2onnx.common.data_types import StringTensorType
+from onnxruntime import InferenceSession
+import onnxruntime as ort
+
 
 logger = logging.getLogger(__name__)
 
@@ -30,25 +38,28 @@ def save_model(model, model_name:str, prefix:str="/tmp/data/"):
 
 
 
-class CustomUnpickler(pickle.Unpickler):
-    def find_class(self, module, name):
-        if name == 'FastVectorizer':
-            from recettes_et_sentiments.api_model.FAST_model_variant import FastVectorizer
-            return FastVectorizer
-        return super().find_class(module, name)
 
+def save_fast_model(model, input_shape, model_name:str, prefix:str="/tmp/data/"):
+    initial_type = [('merged_text', StringTensorType([None, 1]))]
+    onnx_model = skl2onnx.convert_sklearn(model, initial_types=initial_type)
+
+    onnx_model_path = f"{prefix}{model_name}.onnx"
+
+    with open(onnx_model_path, 'wb') as f:
+        f.write(onnx_model.SerializeToString())
 
 
 def load_fast_model(model_name:str, prefix:str="/tmp/data/")-> Pipeline:
 
-    model_path = f"{prefix}{model_name}.pkl"
+    model_path = f"{prefix}{model_name}.onnx"
 
     if os.path.exists(model_path):
         logger.info(f"Loading model from {model_path}")
-        with open(model_path, 'rb') as f:
-            model = CustomUnpickler(f).load()
+
+        session = ort.InferenceSession(model_path)
+
         logger.info(f"Loading model from {model_path} - DONE")
-        return model
+        return session
     else:
         logger.info(f"model not found at {model_path}")
         return None
