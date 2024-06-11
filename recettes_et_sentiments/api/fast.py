@@ -24,17 +24,36 @@ app.add_middleware(
 )
 
 
-#app.state.model_fast = load_model("model_fast")
-#app.state.recipe_processed = pd.read_parquet("/tmp/data/preproc_recipes_fast_name-tag-desc-ingredients.parquet")
+app.state.model_fast = load_model("model_fast")
+if app.state.model_fast is not None:
+    app.state.recipe_processed = pd.read_parquet("/tmp/data/preproc_recipes_fast_name-tag-desc-ingredients.parquet")
 
-@app.get("/model_fast")
+@app.get("/model_fast_query_recipe")
 def model_fast(query:str):
     # in real world, we would check the input
 
+    if app.state.model_fast is None or app.state.recipe_processed is None:
+        error_message = f"Fast Model not found"
+        logger.error(error_message, error_message)
+        raise HTTPException(status_code=503, detail=error_message)
+
     result = find_recipie_with_similar_elements_model_fast(query=query, model_fast=app.state.model_fast, recipe_processed=app.state.recipe_processed)
+
+    suggestions = []
+    for index, row in result.iterrows():
+        suggestions.append(
+            [
+                index,
+                row['name'],
+                f"https://www.food.com/recipe/*-{index}"
+             ]
+            )
+
+    logger.info(f"model_w2vec_similar_to_recipe(query={query}) -> {suggestions}")
+
     return {
         'query': query,
-        'result': result.to_json()
+        'suggestions': suggestions
     }
 
 
