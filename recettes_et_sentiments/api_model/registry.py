@@ -2,6 +2,7 @@ import os
 import logging
 import joblib
 from sklearn.pipeline import Pipeline
+from recettes_et_sentiments.api_model.FAST_model_variant import FastVectorizer
 
 logger = logging.getLogger(__name__)
 
