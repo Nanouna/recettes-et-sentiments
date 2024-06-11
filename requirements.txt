@@ -9,9 +9,8 @@ gensim
 scipy==1.12 # fix the issue : ImportError: cannot import name 'triu' from 'scipy.linalg'
             # pip uninstall scipy
             # pip install -r requirements.txt
-
+pyarrow
 
 # api
 fastapi
 uvicorn
-google-cloud-storage #fetch models & csv from GCP Bucket
