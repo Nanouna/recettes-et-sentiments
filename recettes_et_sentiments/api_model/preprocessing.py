@@ -4,6 +4,11 @@ import string
 import typing
 import unidecode
 
+import logging
+
+logger = logging.getLogger(__name__)
+
+
 from nltk import word_tokenize, pos_tag
 from nltk.stem import WordNetLemmatizer
 from nltk.corpus import wordnet as wn
@@ -273,6 +278,9 @@ def concat_columns(df:pd.DataFrame, columns:typing.List[str], dropSourceColumn:b
 
     """
 
+    logger.info(df[columns].head())
+
+    df['tags'] = df['tags'].apply(lambda x: ' '.join(x))
     df['merged_text'] = df[columns].apply(lambda row: ' '.join(row.values.astype(str)), axis=1)
 
     if dropSourceColumn:

@@ -30,11 +30,11 @@ for FILE in $FILE_NAMES; do
     fi
 done
 
-echo "uncompressing .tar.bz2 files"
-cd ${BASE_FOLDER}
-cat *.tar.bz2 | tar -ixjv
-cd -
-echo "uncompressing .tar.bz2 files - DONE"
+# echo "uncompressing .tar.bz2 files"
+# cd ${BASE_FOLDER}
+# cat *.tar.bz2 | tar -ixjv
+# cd -
+# echo "uncompressing .tar.bz2 files - DONE"
 
 ls -la $BASE_FOLDER
 

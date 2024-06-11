@@ -13,6 +13,6 @@ PORT=$(yq e '.PORT' $ENV_FILE)
 docker run \
     -e BUCKET_URL="$BUCKET_URL" \
     -e FILE_NAMES="$FILE_NAMES" \
-    -e PORT="$PORT" \
+    -e PORT="8080" \
     -p 8080:8080 \
     $GAR_IMAGE
