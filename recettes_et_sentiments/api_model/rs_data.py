@@ -65,7 +65,7 @@ def add_columns_and_merge_text(df:pd.DataFrame) -> pd.DataFrame:
 
 
     # drop redundant columns
-    df.drop(columns={'nutrition', 'steps', 'ingredients'}, inplace=True)
+    df.drop(columns={'nutrition', 'steps'}, inplace=True)
 
     logger.info("add_columns_and_merge_text done")
 
