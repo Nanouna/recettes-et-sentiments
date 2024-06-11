@@ -1,9 +1,13 @@
 import pandas as pd
+import re
 import string
 import typing
+import unidecode
+
 import logging
 
 logger = logging.getLogger(__name__)
+
 
 from nltk import word_tokenize, pos_tag
 from nltk.stem import WordNetLemmatizer
@@ -92,6 +96,27 @@ def basic_preprocess_tags(df: pd.DataFrame) -> pd.DataFrame:
     """
     removed_tags = parameters.TAGS_STOPWORDS
     df['tags'] = df['tags'].apply(lambda tag_list: [x for x in tag_list if x not in removed_tags])
+    df['tags'] = df['tags'].apply(lambda tags : list(set([parameters.TAGS_REPLACEMENTS.get(tag, tag) for tag in tags])))
+    # df['tags'] = df['tags'].apply(lambda tags: ' '.join(tags)) removed for word2vec
+    return df
+
+def clean_ingredient(ingredient):
+    lemmatizer = WordNetLemmatizer()
+    ingredient = re.sub(r'[^a-zA-Z\s]', '', ingredient)
+    ingredient = ingredient.lower()
+    ingredient = unidecode.unidecode(ingredient)
+    ingredient = ' '.join([lemmatizer.lemmatize(word) for word in ingredient.split()])
+    return ingredient.strip()
+
+def basic_preprocess_ingredients(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    remove ingredients from list and simplify them from a mapping
+    """
+    unique_ingredients = set([ingredient for row in df['ingredients'] for ingredient in row])
+    cleaned_ingredients = [clean_ingredient(ing) for ing in unique_ingredients]
+    dictionnary_ingredients = dict(zip(unique_ingredients, cleaned_ingredients))
+    df['ingredients'] = df['ingredients'].apply(lambda ingredients : [dictionnary_ingredients[ingredient] for ingredient in ingredients])
+    df['ingredients'] = df['ingredients'].apply(lambda ingredients : list(set([parameters.REPLACE_INGREDIENT[ing] for ing in ingredients if ing in parameters.REPLACE_INGREDIENT])))
     # df['tags'] = df['tags'].apply(lambda tags: ' '.join(tags)) removed for word2vec
     return df
 
@@ -128,6 +153,7 @@ def full_basic_preproc_recipes(data: pd.DataFrame) -> pd.DataFrame:
     * numeric_preproc
     """
     df = basic_preprocess_tags(data)
+    df = basic_preprocess_ingredients(df)
     df = basic_preprocess_recipe(df, parameters.RECIPE_COLUMNS_FOR_TEXT_PREPROC)
     return numeric_preproc(df, parameters.RECIPE_COLUMNS_FOR_NUMERIC_PREPROC)
 
