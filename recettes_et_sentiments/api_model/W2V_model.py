@@ -17,6 +17,7 @@ def train_word2vec(data: pd.Series) -> Word2Vec:
     """
     Instantiate the word2Vec model on the required text as list of all values
     """
+    data = [list(row) for row in data]
     model =  Word2Vec(sentences=data,
                       vector_size=parameters.W2V_VECTOR_SIZE,
                       window=parameters.W2V_WINDOW,
@@ -60,6 +61,7 @@ def preprocess_data(data: pd.DataFrame, column_to_process: str)-> typing.Union[p
     word2vec_model = load_model(word2vec_model_cache_path)
 
     if word2vec_model is None:
+        logger.info("Initializing model...")
         word2vec_model = train_word2vec(data[column_to_process])
         save_model(word2vec_model, word2vec_model_cache_path)
 
@@ -69,6 +71,7 @@ def preprocess_data(data: pd.DataFrame, column_to_process: str)-> typing.Union[p
         data = pd.read_parquet(word2vec_df_cache_path)
     else:
         data[column_to_process+'_vector'] = embedding(word2vec_model, data[column_to_process].tolist())
+        data[column_to_process+'_vector'] = [np.array(liste, dtype=np.float32) for liste in data[column_to_process+'_vector']]
         data.to_parquet(word2vec_df_cache_path)
 
     return data, word2vec_model
@@ -122,17 +125,22 @@ def recommend_recipe_from_custom_input(W2V_model: Word2Vec,
 
 if __name__ == "__main__":
 
-    data = pd.read_parquet('../batch-1672-recettes-et-sentiments-data/last_preproc_we_hope.parquet')
+    data = pd.read_parquet('final_preproc_with_ingredients.parquet')
+    column_to_train= 'col_concat'
+    data['ingredients'] = [list(row) for row in data['ingredients']]
+    data['tags'] = [list(row) for row in data['tags']]
+    data[column_to_train] = data['ingredients'] + data['tags']
 
     print("from recipe id 308080")
-    recipes_with_vectors, word2vec_model = preprocess_data(data, 'tags')
-    KNN_model = instantiate_model(recipes_with_vectors, 'tags')
-    recommended_recipe = recommend_recipe_from_another(KNN_model, recipes_with_vectors, 'tags', entry_recipe_id=308080)
+    recipes_with_vectors, word2vec_model = preprocess_data(data, column_to_train)
+    print('preprocess done')
+    KNN_model = instantiate_model(recipes_with_vectors, column_to_train)
+    recommended_recipe = recommend_recipe_from_another(KNN_model, recipes_with_vectors, column_to_train, entry_recipe_id=308081)
 
 
     print(recommended_recipe)
 
     print("from recipe tags 'christmas', 'gifts', 'chocolate', 'healthy'")
-    recommended_recipe_custom = recommend_recipe_from_custom_input(word2vec_model, KNN_model, recipes_with_vectors, ['christmas', 'gifts', 'chocolate', 'healthy'])
+    recommended_recipe_custom = recommend_recipe_from_custom_input(word2vec_model, KNN_model, recipes_with_vectors, ['rosh hashanah', 'gifts', 'chocolate'])
 
     print(recommended_recipe_custom)
