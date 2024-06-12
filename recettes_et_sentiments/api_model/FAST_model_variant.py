@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 
 from sklearn.compose import ColumnTransformer
-from sklearn.pipeline import Pipeline
+from sklearn.pipeline import FunctionTransformer, Pipeline
 from sklearn.metrics.pairwise import cosine_similarity
 
 from recettes_et_sentiments.api_model.preprocessing_pipeline import CacheStep, BasicPreprocessing, ConcatColumns
@@ -17,12 +17,18 @@ from recettes_et_sentiments.api_model.fast_vectorizer import FastVectorizer
 logger = logging.getLogger(__name__)
 
 
-def rename_columns(X, original_columns, vector_size):
-    vector_columns = [f'vector_{i}' for i in range(vector_size-len(original_columns))]
-    return pd.DataFrame(X, columns=vector_columns + original_columns)
+def rename_columns(X, original_columns, vector_size, columns_to_merge_for_training):
+    vector_columns = [f'vector_{i}' for i in range(vector_size-len(original_columns)-len(columns_to_merge_for_training)+1)]
+
+    remaining_columns = [x for x in original_columns if x not in columns_to_merge_for_training]
+    remaining_columns.append("merged_text")
+    logger.info(f"rename_columns : {'----'*10}")
+    logger.info("rename_columns : ", vector_columns + remaining_columns)
+    return pd.DataFrame(X, columns=vector_columns + remaining_columns)
 
 
 def make_fast_preprocessor_pipeline(columns_to_merge_for_training:typing.List[str],
+                                    original_columns:typing.List[str],
                                 vector_size=100,
                                 window=5,
                                 min_count=1,
@@ -55,10 +61,19 @@ def make_fast_preprocessor_pipeline(columns_to_merge_for_training:typing.List[st
         n_jobs=-1
     )
 
+    rename_transformer = FunctionTransformer(rename_columns, kw_args={
+        'original_columns': original_columns,
+        'vector_size': vector_size,
+        'columns_to_merge_for_training':columns_to_merge_for_training
+        })
+
+
     preprocessing_pipeline = Pipeline(steps=[
         ('basic_preproc', basic_preproc),
         ('concat_columns', concat_columns),
-        ('vectorize_and_combine', column_transformer)
+        ('vectorize_and_combine', column_transformer),
+        ('rename_columns', rename_transformer)
+
     ])
 
     return preprocessing_pipeline
@@ -108,6 +123,7 @@ if __name__ == "__main__":
 
         preprocessor_pipeline = make_fast_preprocessor_pipeline(
             columns_to_merge_for_training=["name", "tags", "description", "merged_ingredients"],
+            original_columns=recipe_df_ori.columns,
             vector_size=10,
             window=10,
             min_count=1,

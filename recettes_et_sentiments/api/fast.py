@@ -66,9 +66,11 @@ def model_fast(query:str):
         'suggestions': suggestions
     }
 
-
-# app.state.recipes_with_vectors, app.state.word2vec_model = W2V_model.preprocess_data(pd.DataFrame(), 'tags')
-# app.state.knn_model = W2V_model.instantiate_model(app.state.recipes_with_vectors, 'tags')
+try:
+    app.state.recipes_with_vectors, app.state.word2vec_model = W2V_model.preprocess_data(pd.DataFrame(), 'tags')
+    app.state.knn_model = W2V_model.instantiate_model(app.state.recipes_with_vectors, 'tags')
+except Exception as e:
+    logger.error(f"An error occurred while loading the model: {e}", exc_info=True)
 
 # http://localhost:8000/model_w2vec_similar_to_recipe?recipe_id=20374
 @app.get("/model_w2vec_similar_to_recipe")
