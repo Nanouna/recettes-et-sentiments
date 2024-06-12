@@ -64,13 +64,13 @@ def model_fast(query:str):
 
 try:
     app.state.recipes_with_vectors_tags, app.state.word2vec_model_tags = W2V_model.preprocess_data(pd.DataFrame(), 'tags')
-    app.state.knn_model_tags = W2V_model.instantiate_model(app.state.recipes_with_vectors, 'tags')
+    app.state.knn_model_tags = W2V_model.instantiate_model(app.state.recipes_with_vectors_tags, 'tags')
 
     app.state.recipes_with_vectors_ingredients, app.state.word2vec_model_ingredients = W2V_model.preprocess_data(pd.DataFrame(), 'ingredients')
-    app.state.knn_model_ingredients = W2V_model.instantiate_model(app.state.recipes_with_vectors, 'ingredients')
+    app.state.knn_model_ingredients = W2V_model.instantiate_model(app.state.recipes_with_vectors_ingredients, 'ingredients')
 
     app.state.recipes_with_vectors_col_concat, app.state.word2vec_model_col_concat = W2V_model.preprocess_data(pd.DataFrame(), 'col_concat')
-    app.state.knn_model_col_concat = W2V_model.instantiate_model(app.state.recipes_with_vectors, 'col_concat')
+    app.state.knn_model_col_concat = W2V_model.instantiate_model(app.state.recipes_with_vectors_col_concat, 'col_concat')
 except Exception as e:
     logger.error(f"An error occurred while loading the model: {e}", exc_info=True)
 
