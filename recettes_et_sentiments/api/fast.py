@@ -24,7 +24,7 @@ app.add_middleware(
 )
 
 
-app.state.model_fast = registry.load_fast_model(model_name="model_fast")
+""" app.state.model_fast = registry.load_fast_model(model_name="model_fast")
 if app.state.model_fast is not None:
     app.state.recipe_processed = pd.read_parquet("/tmp/data/preproc_recipes_fast_name-tag-desc-ingredients.parquet")
 
@@ -60,7 +60,7 @@ def model_fast(query:str):
     return {
         'query': query,
         'suggestions': suggestions
-    }
+    } """
 
 try:
     app.state.recipes_with_vectors_tags, app.state.word2vec_model_tags = W2V_model.preprocess_data(pd.DataFrame(), 'tags')
