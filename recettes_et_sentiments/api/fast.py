@@ -76,13 +76,20 @@ except Exception as e:
 
 
 # http://localhost:8000/model_w2vec_similar_to_recipe?recipe_id=20374
+# https://recettes-et-sentiments-api-p4x6pl7fiq-ew.a.run.app/model_w2vec_similar_to_recipe?recipe_id=331985
 @app.get("/model_w2vec_similar_to_recipe")
 def model_fast(recipe_id:int):
 
     logger.info(f"model_w2vec_similar_to_recipe(recipe_id={recipe_id})")
     suggestions = []
     try:
-        recommended_recipes = W2V_model.recommend_recipe_from_another(app.state.knn_model_col_concat, app.state.recipes_with_vectors_col_concat, 'tags', entry_recipe_id=recipe_id)
+        recommended_recipes = W2V_model.recommend_recipe_from_another(
+            app.state.knn_model_col_concat,
+            app.state.recipes_with_vectors_col_concat,
+            'col_concat',
+            entry_recipe_id=recipe_id
+            )
+
         for index, row in recommended_recipes.iterrows():
             suggestions.append(
                 [
@@ -107,6 +114,7 @@ def model_fast(recipe_id:int):
 
 
 # http://localhost:8000/model_w2vec_query_recipe_with_tags?query=christmas%20gifts%20chocolate%20healthy
+# https://recettes-et-sentiments-api-p4x6pl7fiq-ew.a.run.app/model_w2vec_query_recipe_with_tags?query=christmas%20gifts%20chocolate%20healthy
 @app.get("/model_w2vec_query_recipe_with_tags")
 def model_fast(query:str):
     # in real world, we would check the input
@@ -141,6 +149,7 @@ def model_fast(query:str):
 
 
 # http://localhost:8000/model_w2vec_query_recipe_with_tags?query=christmas%20gifts%20chocolate%20healthy
+# https://recettes-et-sentiments-api-p4x6pl7fiq-ew.a.run.app/model_w2vec_query_recipe_with_tags?query=christmas%20gifts%20chocolate%20healthy
 @app.get("/model_w2vec_query_recipe_with_ingredients")
 def model_fast(query:str):
     # in real world, we would check the input
@@ -176,6 +185,7 @@ def model_fast(query:str):
 
 
 # http://localhost:8000/model_w2vec_query_recipe_with_tags_and_ingredients?query=christmas%20gifts%20chocolate%20healthy
+# https://recettes-et-sentiments-api-p4x6pl7fiq-ew.a.run.app/model_w2vec_query_recipe_with_tags_and_ingredients?query=christmas%20gifts%20chocolate%20healthy
 @app.get("/model_w2vec_query_recipe_with_tags_and_ingredients")
 def model_fast(query:str):
     # in real world, we would check the input
