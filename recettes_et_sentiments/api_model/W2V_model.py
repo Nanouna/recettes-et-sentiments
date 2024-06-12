@@ -119,7 +119,7 @@ def recommend_recipe_from_custom_input(W2V_model: Word2Vec,
                                               n_neighbors=parameters.KNN_N_NEIGHBORS - 1
                                               )
 
-    return pd.DataFrame(data.iloc[indices[0][1:]])
+    return pd.DataFrame(data.iloc[indices[0]])
 
 
 if __name__ == "__main__":

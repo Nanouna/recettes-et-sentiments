@@ -62,9 +62,18 @@ def model_fast(query:str):
         'suggestions': suggestions
     }
 
+try:
+    app.state.recipes_with_vectors_tags, app.state.word2vec_model_tags = W2V_model.preprocess_data(pd.DataFrame(), 'tags')
+    app.state.knn_model_tags = W2V_model.instantiate_model(app.state.recipes_with_vectors, 'tags')
 
-app.state.recipes_with_vectors, app.state.word2vec_model = W2V_model.preprocess_data(pd.DataFrame(), 'tags')
-app.state.knn_model = W2V_model.instantiate_model(app.state.recipes_with_vectors, 'tags')
+    app.state.recipes_with_vectors_ingredients, app.state.word2vec_model_ingredients = W2V_model.preprocess_data(pd.DataFrame(), 'ingredients')
+    app.state.knn_model_ingredients = W2V_model.instantiate_model(app.state.recipes_with_vectors, 'ingredients')
+
+    app.state.recipes_with_vectors_col_concat, app.state.word2vec_model_col_concat = W2V_model.preprocess_data(pd.DataFrame(), 'col_concat')
+    app.state.knn_model_col_concat = W2V_model.instantiate_model(app.state.recipes_with_vectors, 'col_concat')
+except Exception as e:
+    logger.error(f"An error occurred while loading the model: {e}", exc_info=True)
+
 
 # http://localhost:8000/model_w2vec_similar_to_recipe?recipe_id=20374
 @app.get("/model_w2vec_similar_to_recipe")
@@ -73,7 +82,7 @@ def model_fast(recipe_id:int):
     logger.info(f"model_w2vec_similar_to_recipe(recipe_id={recipe_id})")
     suggestions = []
     try:
-        recommended_recipes = W2V_model.recommend_recipe_from_another(app.state.knn_model, app.state.recipes_with_vectors, 'tags', entry_recipe_id=recipe_id)
+        recommended_recipes = W2V_model.recommend_recipe_from_another(app.state.knn_model_col_concat, app.state.recipes_with_vectors_col_concat, 'tags', entry_recipe_id=recipe_id)
         for index, row in recommended_recipes.iterrows():
             suggestions.append(
                 [
@@ -97,17 +106,17 @@ def model_fast(recipe_id:int):
 
 
 
-# http://localhost:8000/model_w2vec_query_recipe?query=christmas%20gifts%20chocolate%20healthy
-@app.get("/model_w2vec_query_recipe")
+# http://localhost:8000/model_w2vec_query_recipe_with_tags?query=christmas%20gifts%20chocolate%20healthy
+@app.get("/model_w2vec_query_recipe_with_tags")
 def model_fast(query:str):
     # in real world, we would check the input
-    logger.info(f"model_w2vec_similar_to_recipe(query={query})")
+    logger.info(f"model_w2vec_query_recipe_with_tags(query={query})")
 
 
     recommended_recipe_custom = W2V_model.recommend_recipe_from_custom_input(
-        app.state.word2vec_model,
-        app.state.knn_model,
-        app.state.recipes_with_vectors,
+        app.state.word2vec_model_tags,
+        app.state.knn_model_tags,
+        app.state.recipes_with_vectors_tags,
         query.split()
         )
 
@@ -123,7 +132,76 @@ def model_fast(query:str):
              ]
             )
 
-    logger.info(f"model_w2vec_similar_to_recipe(query={query}) -> {suggestions}")
+    logger.info(f"model_w2vec_query_recipe_with_tags(query={query}) -> {suggestions}")
+
+    return {
+        'query': query,
+        'suggestions': suggestions
+    }
+
+
+# http://localhost:8000/model_w2vec_query_recipe_with_tags?query=christmas%20gifts%20chocolate%20healthy
+@app.get("/model_w2vec_query_recipe_with_ingredients")
+def model_fast(query:str):
+    # in real world, we would check the input
+    logger.info(f"model_w2vec_query_recipe_with_ingredients(query={query})")
+
+
+    recommended_recipe_custom = W2V_model.recommend_recipe_from_custom_input(
+        app.state.word2vec_model_ingredients,
+        app.state.knn_model_ingredients,
+        app.state.recipes_with_vectors_ingredients,
+        query.split()
+        )
+
+
+
+    suggestions = []
+    for index, row in recommended_recipe_custom.iterrows():
+        suggestions.append(
+            [
+                index,
+                row['name'],
+                f"https://www.food.com/recipe/*-{index}"
+             ]
+            )
+
+    logger.info(f"model_w2vec_query_recipe_with_ingredients(query={query}) -> {suggestions}")
+
+    return {
+        'query': query,
+        'suggestions': suggestions
+    }
+
+
+
+# http://localhost:8000/model_w2vec_query_recipe_with_tags_and_ingredients?query=christmas%20gifts%20chocolate%20healthy
+@app.get("/model_w2vec_query_recipe_with_tags_and_ingredients")
+def model_fast(query:str):
+    # in real world, we would check the input
+    logger.info(f"model_w2vec_query_recipe_with_tags_and_ingredients(query={query})")
+
+
+    recommended_recipe_custom = W2V_model.recommend_recipe_from_custom_input(
+        app.state.word2vec_model_col_concat,
+        app.state.knn_model_col_concat,
+        app.state.recipes_with_vectors_col_concat,
+        query.split()
+        )
+
+
+
+    suggestions = []
+    for index, row in recommended_recipe_custom.iterrows():
+        suggestions.append(
+            [
+                index,
+                row['name'],
+                f"https://www.food.com/recipe/*-{index}"
+             ]
+            )
+
+    logger.info(f"model_w2vec_query_recipe_with_tags_and_ingredients(query={query}) -> {suggestions}")
 
     return {
         'query': query,
