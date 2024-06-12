@@ -132,6 +132,9 @@ if __name__ == "__main__":
         )
         preprocessor_pipeline.fit(recipe_df_ori)
 
+        logger.info(f"preprocessor_pipeline.get_feature_names_out()={preprocessor_pipeline.get_feature_names_out()}")
+        logger.info(f"preprocessor_pipeline.get_params()={preprocessor_pipeline.get_params()}")
+
         registry.save_fast_model(preprocessor_pipeline, recipe_df_ori.shape, model_name="model_fast")
         # reload from disk to have deal with the pipeline in the same way (just fitted :  we have a regular pipeline, loaded from disk we must comply with a specific syntax)
         preprocessor_pipeline = registry.load_fast_model(model_name="model_fast")
@@ -157,6 +160,7 @@ if __name__ == "__main__":
     # Transform ingredients to vector
     ingredients_text = ' '.join(available_ingredients)
     input_name = preprocessor_pipeline.get_inputs()[0].name
+
     ingredients_vector = preprocessor_pipeline.run(None, {input_name: ingredients_text})
     # ingredients_vector = preprocessor_pipeline.named_steps['vectorize_and_combine'].named_transformers_['text']._get_mean_vector(ingredients_text).reshape(1, -1)
 

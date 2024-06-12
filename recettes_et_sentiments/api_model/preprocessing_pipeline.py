@@ -35,7 +35,7 @@ class BasicPreprocessing(BaseEstimator, TransformerMixin):
     """
 
     def __init__(self):
-        pass
+        self.feature_names_out_ = None
 
 
     def fit(self, X, y=None):
@@ -46,11 +46,19 @@ class BasicPreprocessing(BaseEstimator, TransformerMixin):
     def transform(self, X):
         logger.info("Transforming data with BasicPreprocessing")
         X = X.copy()
-        return preprocessing.full_basic_preproc_recipes(X)
+        transformed_X = preprocessing.full_basic_preproc_recipes(X)
+        self.feature_names_out_ = transformed_X.columns
+        logger.info(f"Transforming data with BasicPreprocessing {self.feature_names_out_}")
+        return transformed_X
 
 
-    def get_feature_names_out(self):
-        pass
+    def get_feature_names_out(self, input_features=None):
+        if self.feature_names_out_ is None:
+            raise AttributeError("Transformer has not been fitted yet.")
+
+        logger.info(f"BasicPreprocessing.get_feature_names_out(input_features={input_features}) -> {self.feature_names_out_}")
+
+        return self.feature_names_out_
 
 
 
@@ -63,18 +71,34 @@ class ConcatColumns(BaseEstimator, TransformerMixin):
     """
     def __init__(self, columns, dropSourceColumn=True):
         self.columns = columns
+        self.columns_out = None
         self.dropSourceColumn = dropSourceColumn
 
     def fit(self, X, y=None):
         logger.info("Fitting ConcatColumns")
+
+        if self.dropSourceColumn:
+            remaining_columns = [col for col in X.columns if col not in self.columns]
+        else:
+            remaining_columns = list(X.columns)
+        self.columns_out = remaining_columns + ['merged_text']
+
         return self
 
     def transform(self, X):
         logger.info("Transforming data with ConcatColumns")
-        return preprocessing.concat_columns(X.copy(), self.columns, self.dropSourceColumn)
+        value = preprocessing.concat_columns(X.copy(), self.columns, self.dropSourceColumn)
+        logger.info(f"ConcatColumns - list of column names :  {value.colums}")
+        self.columns_out=value.colums
+        return value
 
-    def get_feature_names_out(self):
-        pass
+    def get_feature_names_out(self, input_features=None):
+        if self.columns_out is None:
+            raise AttributeError("Transformer has not been fitted yet.")
+
+        logger.info(f"ConcatColumns.get_feature_names_out(input_features={input_features}) -> {self.columns_out}")
+
+        return self.columns_out
 
 
 
@@ -84,6 +108,7 @@ class CacheStep(BaseEstimator, TransformerMixin):
     def __init__(self, filename, step_func):
         self.filename = filename
         self.step_func = step_func
+        self.columns_out = None
         self.cached_df = load_from_parquet(filename)
 
     def fit(self, X, y=None):
@@ -92,17 +117,30 @@ class CacheStep(BaseEstimator, TransformerMixin):
         else:
             logger.info(f"FIT : No cached data available for {self.filename}, fitting step")
             self.step_func.fit(X, y)
+
+        self.columns_out = X.columns
+
         return self
 
     def transform(self, X):
         if self.cached_df is not None:
             logger.info(f"Transform : Using cached data from {self.filename}")
+            self.columns_out = self.cached_df.columns
             return self.cached_df
         else:
             logger.info(f"Transforming data and saving to {self.filename}")
             transformed_X = self.step_func.transform(X)
             save_to_parquet(transformed_X, self.filename)
+            self.columns_out = transformed_X.columns
             return transformed_X
+
+    def get_feature_names_out(self, input_features=None):
+        if self.columns_out is None:
+            raise AttributeError("Transformer has not been fitted yet.")
+
+        logger.info(f"CacheStep.get_feature_names_out(input_features={input_features}) -> {self.columns_out}")
+
+        return self.columns_out
 
 
 
