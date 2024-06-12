@@ -90,7 +90,8 @@ W2V_VECTOR_SIZE = 100
 W2V_WINDOW = 5
 W2V_MIN_COUNT = 1
 
-KNN_N_NEIGHBORS = 3 # should not be inferior to 2. 1 would return itself
+
+KNN_N_NEIGHBORS = 6 # should not be inferior to 2. 1 would return itself
 
 
 REPLACE_INGREDIENT = {'acorn squash':'acorn squash',

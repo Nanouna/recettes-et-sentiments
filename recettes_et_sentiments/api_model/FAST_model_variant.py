@@ -2,6 +2,7 @@ import os
 import typing
 import joblib
 import logging
+import time
 
 import numpy as np
 import pandas as pd
@@ -88,11 +89,14 @@ def make_fast_preprocessor_pipeline(columns_to_merge_for_training:typing.List[st
     return preprocessing_pipeline
 
 
-def find_recipie_with_similar_elements_model_fast(query:str, model_fast, recipe_processed):
+def find_recipie_with_similar_elements_model_fast(query:str, model_fast, recipe_processed, vector_size):
 
     ingredients_vector = model_fast.named_steps['vectorize_and_combine'].named_transformers_['text']._get_mean_vector(query).reshape(1, -1)
 
-    similarities = cosine_similarity(ingredients_vector, np.vstack(recipe_processed.iloc[:, :2000].values))
+    # dataframe is 'vector_size' columns, then the reciepes columns (with Timestamp,string etc...)
+    # the line below fetch only the columns relatives to the FastVectorizer output
+    recipes_vectors = recipe_processed.iloc[:, :vector_size].values
+    similarities = cosine_similarity(ingredients_vector, np.vstack(recipes_vectors))
 
     top_indices = similarities.argsort()[0][-5:]  # Top 5 similar recipes
 
@@ -111,8 +115,10 @@ if __name__ == "__main__":
 
     recipe_df_ori = rs_data.load_recipes("../batch-1672-recettes-et-sentiments-data/RAW_recipes.csv")
 
+    print(recipe_df_ori.head())
 
     preprocessor_pipeline = registry.load_model(model_name="model_fast")
+    vector_size=10
 
     if preprocessor_pipeline is None:
 
@@ -120,7 +126,7 @@ if __name__ == "__main__":
 
         preprocessor_pipeline = make_fast_preprocessor_pipeline(
             columns_to_merge_for_training=["name", "tags", "description", "merged_ingredients"],
-            vector_size=2000,
+            vector_size=vector_size,
             window=10,
             min_count=1,
             workers=6,
@@ -153,8 +159,18 @@ if __name__ == "__main__":
     ingredients_text = ' '.join(available_ingredients)
     ingredients_vector = preprocessor_pipeline.named_steps['vectorize_and_combine'].named_transformers_['text']._get_mean_vector(ingredients_text).reshape(1, -1)
 
-    similarities = cosine_similarity(ingredients_vector, np.vstack(recipe_processed.iloc[:, :2000].values))
+    first_row = recipe_processed.iloc[0]
+
+    for column_name, value in first_row.items():
+        print(f"{column_name} = {value}", flush=True)
+        time.sleep(0.1)
+
+    # dataframe is 'vector_size' columns, then the reciepes columns (with Timestamp,string etc...)
+    # the line below fetch only the columns relatives to the FastVectorizer output
+    recipes_vectors = recipe_processed.iloc[:, :vector_size].values
+
+    similarities = cosine_similarity(ingredients_vector, np.vstack(recipes_vectors))
     top_indices = similarities.argsort()[0][-5:]  # Top 5 similar recipes
 
     recommended_recipes = recipe_processed.iloc[top_indices]
-    print(recommended_recipes)
+    print(recommended_recipes[[22]])

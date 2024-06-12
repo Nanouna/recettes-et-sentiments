@@ -71,6 +71,7 @@ def preprocess_data(data: pd.DataFrame, column_to_process: str)-> typing.Union[p
         data = pd.read_parquet(word2vec_df_cache_path)
     else:
         data[column_to_process+'_vector'] = embedding(word2vec_model, data[column_to_process].tolist())
+        #probleme de to_parquet sous windows, pas sous linux ou mac.
         data[column_to_process+'_vector'] = [np.array(liste, dtype=np.float32) for liste in data[column_to_process+'_vector']]
         data.to_parquet(word2vec_df_cache_path)
 
@@ -120,7 +121,7 @@ def recommend_recipe_from_custom_input(W2V_model: Word2Vec,
                                               n_neighbors=parameters.KNN_N_NEIGHBORS - 1
                                               )
 
-    return pd.DataFrame(data.iloc[indices[0][1:]])
+    return pd.DataFrame(data.iloc[indices[0]])
 
 
 if __name__ == "__main__":
@@ -136,7 +137,6 @@ if __name__ == "__main__":
     print('preprocess done')
     KNN_model = instantiate_model(recipes_with_vectors, column_to_train)
     recommended_recipe = recommend_recipe_from_another(KNN_model, recipes_with_vectors, column_to_train, entry_recipe_id=308081)
-
 
     print(recommended_recipe)
 
