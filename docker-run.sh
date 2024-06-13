@@ -1,5 +1,7 @@
 #!/bin/sh
 
+# run locally the docker image built by docker-build.sh
+
 # Lire les variables d'environnement depuis le fichier YAML
 ENV_FILE="Docker/.env.yaml"
 

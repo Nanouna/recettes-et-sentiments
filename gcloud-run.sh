@@ -1,5 +1,8 @@
 #!/bin/sh
 
+# deploy and run recettes-et-sentiments-api docker image on Google Cloud Run
+# pre-requisites : implement prerequisites of docker-build-for-cloud-run.sh & run it
+
 # Lire les variables d'environnement depuis le fichier YAML
 ENV_FILE="Docker/.env.yaml"
 

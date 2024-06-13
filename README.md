@@ -11,7 +11,9 @@
 [![Stargazers][stars-shield]][stars-url]
 [![Issues][issues-shield]][issues-url]
 [![MIT License][license-shield]][license-url]
-[![LinkedIn][linkedin-shield]][linkedin-url]
+[![LinkedIn][linkedin-shield]][linkedin-url1]
+[![LinkedIn][linkedin-shield]][linkedin-url2]
+[![LinkedIn][linkedin-shield]][linkedin-url3]
 
 
 # recettes-et-sentiments
@@ -42,36 +44,120 @@ The third goal is to generate a brand new receipes from a list of key ingredient
 
  - python 3.10.6
  - Tested on Windows(11) & MacOSX (intel/sonoma)
+ - gcloud command line : https://cloud.google.com/sdk/docs/install
+  - gcloud init
+  - gcloud auth login
+  - gcloud config set project PROJECT_ID (replace PROJECT_ID with your GCP project ID)
 
  ### steps
+
+#### Cloning the repo and install dependencies
 
 - git clone git@github.com:Nanouna/recettes-et-sentiments.git
 - cd recettes-et-sentiments
 - pyenv virtualenv recettes-et-sentiments
 - pyenv local recettes-et-sentiments
 - pip install --upgrade pip
-- cd recettes_et_sentiments
 - pip install -r requirements.txt
-- pip install .
-- make all_tests
-- sudo snap install yq
-- ./docker-build.sh
-- ./docker-run.sh
-- setup GCP project
-- deploy on cloud run
+- pip install -e .
+- sudo snap install yq (or brew install yq on mac)
+
+#### Google Cloud Bucket Creation
+
+- it's required even if the docker image is running locally, as the image will fetch
+ models & data files on startup
+- edit the Docker/.env.yaml & set BUCKET_URL & GCP_REGION
+  - BUCKET_URL must start with https://storage.googleapis.com/, just add your bucket name after that
+- ./setup-gcloud-bucket.sh
+
+#### Training the model and store them on Google Cloud Bucket
+
+- Upload the trained models & parquets to this bucket
+  - run train_model.py, this will generate models & parquet :
+    - python recettes-et-sentiments/api_model/train_model.py
+  - you should get the following files in /tmp/data/ :
+    - w2vec_model_tags.pkl
+    - w2vec_df_tags.parquet
+    - knn_model_tags.pkl
+    - w2vec_model_ingredients.pkl
+    - w2vec_df_ingredients.parquet
+    - knn_model_ingredients.pkl
+    - w2vec_model_col_concat.pkl
+    - w2vec_df_col_concat.parquet
+    - knn_model_col_concat.pkl
+  - copy the files to the bucket
+    - gsutil cp /tmp/data/* gs://your-bucket-name/
+
+#### Docker : build & local testing
+
+- edit the .env.yaml with the URL of the bucket and the list of file names
+    uploaded to the bucket
+- local testing
+  - build the image with : ./docker-build.sh
+  - run the image with : ./docker-run.sh
+  - run the image and open a shell to debug : ./DockerDebug.sh
+
+#### Docker : build & run on Google Cloud Run
+- run on Google Cloud Run
+  - edit Docker/.env.yaml and fill the variables
+    - GCP_PROJECT_ID : your GCP project ID
+    - GCP_REGION : your prefered region for the Cloud Run Deployemnt
+  - ./setup-gcloud-artifcat-registry.sh :  setup the Google Cloud artificat registry (to be run only once)
+  - ./docker-build-for-cloud-run.sh : build the docker image for Google Cloud Run and push it to Google Artificat Registry
+  - ./gcloud-run.sh : deploy & run the image on Googel Cloud Run
+
+#### check the API documentation
+
+  - the ./gcloud-run.sh will print this last line :
+
+    ex : Service URL: https://recettes-et-sentiments-api-p4x6pl7fiq-ew.a.run.app
+
+    paste this URL + docs :  https://recettes-et-sentiments-api-p4x6pl7fiq-ew.a.run.app/docs to check the OpenAPI documentation
+
+![Recettes et sentiments OpenAPI preview](readme_images/recette-et-sentiment-open-api.png)
+
+#### try out the APIs in your browser
+
+  - replace the hostname in the following URL with your own Service URL :
+  - recipe similar to an existing recipe
+
+    https://recettes-et-sentiments-api-p4x6pl7fiq-ew.a.run.app/model_w2vec_similar_to_recipe?recipe_id=331985
+  - recipe recommendantion based on tags
+
+    https://recettes-et-sentiments-api-p4x6pl7fiq-ew.a.run.app/model_w2vec_query_recipe_with_tags?query=christmas%20gifts%20chocolate%20healthy
+  - recipe recommendantion based on ingredients
+
+    https://recettes-et-sentiments-api-p4x6pl7fiq-ew.a.run.app/model_w2vec_query_recipe_with_ingredients?query=chocolate%20mayonnaise
+  - recipe recommendantion based on ingredients & tags
+
+    https://recettes-et-sentiments-api-p4x6pl7fiq-ew.a.run.app/model_w2vec_query_recipe_with_tags_and_ingredients?query=christmas%20gifts%20chocolate%20healthy
+
+    ![Recettes et sentiments API call preview](readme_images/preview_api_call.png)
+
+
+# Check our Streamlit web application to interract with our API
+
+ - see https://github.com/Nanouna/recettes-et-sentiments-streamlit
+
+ ![Recettes et sentiments Streamlit preview](readme_images/streamlit-preview.png)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## Key Technologies used in this project
 
 - Python
-  - NLTK
   - scikitlearn
-  - Pandas
+  - Pandas / Numpy
+  - gensim Word2Vec/FastText & nltk
+  - uvicorn & fastapi
+
 - Google Cloud Platform (GCP)
   - Cloud Run
   - IAM
-  -
+  - Cloud Bucket
+  - Clourd Artificat Registry
+- Docker
+- Jupyter Notebook
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -112,14 +198,14 @@ __Results :__ (0.43713, 0.19108)
 
 First issue we enconter is that the ratings highly skewed toward the maximum value. It seems that the Americans are either enthousiastic about reviewing a recipe or don't do it at all. It is significantly the same if we look at the average rate by recipe.
 
-![alt text](readme_images/image-1.png)
+![Food.com review notes distributions](readme_images/food.com-review-score-distribution.png)
 
 Considering the objective, we need to have recipes that have enough reviews to be significant. We considered that having the normally distributed average rate by recipe is a good bases to have meanigful reviews we enough variation to have something to predict. Though we had to balance the cut to the dataset size with the significativity.
 
 We selected a threshold of 10+ reviews by recipe.
 We maintain 21399 recipes to train on with this following distribution. It's the smallest threshold that we still consider as a normally distributed distribution of average rating.
 
-![alt text](readme_images/image.png)
+![Average score per recipe for recipe with 10 reviews or more](readme_images/avg-score-per-recipe-with-min-10-reviews.png)
 
 Numerical preprocessing
 
@@ -187,4 +273,6 @@ Distributed under the MIT License. See `LICENSE` for more information.
 [license-shield]: https://img.shields.io/github/license/Nanouna/recettes-et-sentiments.svg?style=for-the-badge
 [license-url]: https://github.com/Nanouna/recettes-et-sentiments/blob/master/LICENSE.txt
 [linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
-[linkedin-url]: https://linkedin.com/in/mansonthomas
+[linkedin-url1]: https://linkedin.com/in/marie-anne-andr%C3%A9
+[linkedin-url2]: https://linkedin.com/in/theorosen
+[linkedin-url3]: https://linkedin.com/in/mansonthomas

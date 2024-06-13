@@ -1,4 +1,10 @@
 #!/bin/sh
+#
+# Fetch models & parquet dataframe from cloud bucket
+# start uvicorn FASTAPI app on port $PORT listening on 0.0.0.0
+#
+
+
 
 # Vérifier si les variables d'environnement sont définies
 if [ -z "$BUCKET_URL" ] || [ -z "$FILE_NAMES" ]; then
@@ -10,7 +16,7 @@ IFS=';'
 BASE_FOLDER=/tmp/data/
 
 mkdir ${BASE_FOLDER}
-
+# loop over $FILE_NAMES and fetch models from Google Cloud buckets
 for FILE in $FILE_NAMES; do
     # URL complète du fichier
     FILE_URL="${BUCKET_URL}/${FILE}"

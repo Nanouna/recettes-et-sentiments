@@ -14,11 +14,17 @@ logger = logging.getLogger(__name__)
 
 
 def save_to_parquet(df, filename):
+    """
+    save a dataframe as parquet, while preserving index
+    """
     logger.info(f"Saving DataFrame to {filename}")
     df.to_parquet(filename, index=True)
     return df
 
 def load_from_parquet(filename):
+    """
+    load a dataframe as parquet, return None if the file doesn't exist
+    """
     if os.path.exists(filename):
         logger.info(f"Loading DataFrame from {filename}")
         return pd.read_parquet(filename)
@@ -81,6 +87,10 @@ class ConcatColumns(BaseEstimator, TransformerMixin):
 
 
 class CacheStep(BaseEstimator, TransformerMixin):
+    """
+        Allow to load a cached dataframe if it exists
+        or transform the X and save it as parquet
+    """
     def __init__(self, filename, step_func):
         self.filename = filename
         self.step_func = step_func

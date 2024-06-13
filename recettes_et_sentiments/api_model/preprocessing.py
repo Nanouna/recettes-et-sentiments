@@ -20,21 +20,33 @@ from sklearn.preprocessing import RobustScaler
 from recettes_et_sentiments.api_model import parameters
 
 
-# classic NLP preprocessing
+
 def remove_punctuation(text:str) -> str:
+    """
+     remove punctuation (string.punctuation) from the intput 'text'
+    """
     for punctuation in string.punctuation:
         text = str(text).replace(punctuation, ' ')
     return text
 
 def lowercase(text:str) -> str:
+    """
+     return lower case text
+    """
     lowercased = text.lower()
     return lowercased
 
 def remove_numbers(text:str) -> str:
+    """
+     remove numbers from text
+    """
     words_only = ''.join([i for i in text if not i.isdigit()])
     return words_only
 
 def remove_stopwords(text:str) -> str:
+    """
+     tokenize and remove stopwords and parameters.RECIPE_STOPWORDS from text
+    """
     tokenized = word_tokenize(text)
     without_stopwords = [word for word in tokenized if not word in parameters.STOP_WORDS]
     without_recipe_stopwords = [word for word in without_stopwords if not word in parameters.RECIPE_STOPWORDS]
@@ -101,6 +113,13 @@ def basic_preprocess_tags(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 def clean_ingredient(ingredient):
+    """
+        remove all non [alphabetic characters & space]
+        lower case
+        unidecode the texte (the original dataset contains some special caracteres)
+        lemmatize the result
+        and return a strip version of the text
+    """
     lemmatizer = WordNetLemmatizer()
     ingredient = re.sub(r'[^a-zA-Z\s]', '', ingredient)
     ingredient = ingredient.lower()
@@ -121,6 +140,9 @@ def basic_preprocess_ingredients(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 def basic_preprocess_recipe(df: pd.DataFrame, columns_to_preproc: list) -> pd.DataFrame:
+    """
+    apply basic recipe preprocessing for each word of the recipe
+    """
     for col in columns_to_preproc:
         df[col] = df[col].apply(basic_word_processing)
     return df

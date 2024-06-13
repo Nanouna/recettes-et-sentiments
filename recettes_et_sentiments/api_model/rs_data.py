@@ -6,9 +6,9 @@ import pandas as pd
 logger = logging.getLogger(__name__)
 
 def load_reviews(path: str) -> pd.DataFrame:
-    '''
-    load csv files
-    '''
+    """
+    Load csv files from path, and parse dates columns
+    """
     df = pd.read_csv(path,
                      parse_dates=['date'],
                      engine='python')
@@ -16,9 +16,10 @@ def load_reviews(path: str) -> pd.DataFrame:
 
 
 def convert_column_to_list(column):
-    '''
-    Read csv as python interpretable data
-    '''
+    """
+    Read csv as python interpretable data, used to convert a string reprenting
+    a list of string ex : '"a","b","c"' to a list of string
+    """
     return column.apply(ast.literal_eval)
 
 
@@ -74,7 +75,10 @@ def add_columns_and_merge_text(df:pd.DataFrame) -> pd.DataFrame:
 
 def load_recipes(path: str, store_parquet_path_prefix="/tmp/data/") -> pd.DataFrame:
     """
-    load csv files
+    load a parquet representing RAW_recipes.csv with some transformation if it exists
+    or
+    load the RAW_recipes.csv and apply the add_columns_and_merge_text() function
+    and store the result as parquet file.
     """
     logger.info(f"loading '{path}'")
 

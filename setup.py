@@ -12,7 +12,7 @@ setup(
     name='recettes_et_sentiments',
     version='0.1',
     license="MIT",
-    author="Marie-Anne André - https://github.com/Nanouna; Théo Rosen - https://github.com/ ?  ;Thomas Manson - https://github.com/dev-mansonthomas",
+    author="Marie-Anne André - https://github.com/Nanouna; Théo Rosen - https://github.com/theorosen12 ;Thomas Manson - https://github.com/dev-mansonthomas",
     packages=find_packages(),
     install_requires=parse_requirements('requirements.txt'),
 )
