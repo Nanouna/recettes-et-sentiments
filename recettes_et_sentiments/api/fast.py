@@ -159,8 +159,8 @@ def model_fast(query:str = Query(..., description="Tags query string",min_length
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# http://localhost:8000/model_w2vec_query_recipe_with_tags?query=christmas%20gifts%20chocolate%20healthy
-# https://recettes-et-sentiments-api-p4x6pl7fiq-ew.a.run.app/model_w2vec_query_recipe_with_tags?query=christmas%20gifts%20chocolate%20healthy
+# http://localhost:8000/model_w2vec_query_recipe_with_ingredients?query=christmas%20gifts%20chocolate%20healthy
+# https://recettes-et-sentiments-api-p4x6pl7fiq-ew.a.run.app/model_w2vec_query_recipe_with_ingredients?query=chocolate%20mayonnaise
 @app.get("/model_w2vec_query_recipe_with_ingredients")
 def model_fast(query:str = Query(..., description="Ingredients query string",min_length=3, max_length=300))->RecipeResponse:
     """
