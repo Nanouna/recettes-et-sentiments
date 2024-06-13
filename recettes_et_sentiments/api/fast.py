@@ -70,6 +70,9 @@ def model_fast(recipe_id:int = Query(..., description="ID of an existing recipe 
 
     - **query**: A string containing the ingredients separated by spaces.
     - **returns**: A list of suggested recipes with their names and URLs.
+
+    maybe you can find a better soup than this one :
+        <a href="https://www.food.com/recipe/cheeseburger-soup-44294" target="_blank">CHEESEBURGER SOUP</a>
     """
     logger.info(f"model_w2vec_similar_to_recipe(recipe_id={recipe_id})")
     try:
@@ -117,6 +120,10 @@ def model_fast(query:str = Query(..., description="Tags query string",min_length
 
     - **query**: A string containing the ingredients separated by spaces.
     - **returns**: A list of suggested recipes with their names and URLs.
+
+    Stop playing with kids stuff, search healthy recipe to avoid this nightmare :
+
+    <a href="https://www.food.com/recipe/koolaid-pie-106096" target="_blank">KOOLAID PIE</a>
     """
     # in real world, we would check the input
     logger.info(f"model_w2vec_query_recipe_with_tags(query={query})")
@@ -163,6 +170,10 @@ def model_fast(query:str = Query(..., description="Ingredients query string",min
 
     - **query**: A string containing the ingredients separated by spaces.
     - **returns**: A list of suggested recipes with their names and URLs.
+
+    You surely can use Mayonnaise better than this recipe :
+
+    <a href="https://www.food.com/recipe/moist-deep-chocolate-mayonnaise-cake-or-cupcakes-199954" target="_blank">MOIST DEEP CHOCOLATE MAYONNAISE CAKE OR CUPCAKES</a>
     """
     logger.info(f"model_w2vec_query_recipe_with_ingredients(query={query})")
 
@@ -209,6 +220,9 @@ def model_fast(query:str = Query(..., description="Ingrédients or Tags query st
 
     - **query**: A string containing the ingredients separated by spaces.
     - **returns**: A list of suggested recipes with their names and URLs.
+
+    You can do better with steak than that :
+    <a href="https://www.food.com/recipe/cola-steak-crock-pot-92809" target="_blank">COLA STEAK CROCK POT</a>
     """
     logger.info(f"model_w2vec_query_recipe_with_tags_and_ingredients(query={query})")
 
