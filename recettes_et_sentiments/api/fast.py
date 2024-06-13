@@ -1,10 +1,12 @@
 import pandas as pd
 import logging
+from pydantic import BaseModel, Field
+from typing import List, Dict, Any
 
 logger = logging.getLogger(__name__)
 
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from recettes_et_sentiments.api_model import registry
 from recettes_et_sentiments.api_model.FAST_model_variant import find_recipie_with_similar_elements_model_fast, FastVectorizer
@@ -23,45 +25,6 @@ app.add_middleware(
     allow_headers=["*"],  # Allows all headers
 )
 
-
-""" app.state.model_fast = registry.load_fast_model(model_name="model_fast")
-if app.state.model_fast is not None:
-    app.state.recipe_processed = pd.read_parquet("/tmp/data/preproc_recipes_fast_name-tag-desc-ingredients.parquet")
-
-@app.get("/model_fast_query_recipe")
-def model_fast(query:str):
-    # in real world, we would check the input
-
-    if app.state.model_fast is None or app.state.recipe_processed is None:
-        error_message = f"Fast Model not found"
-        logger.error(error_message, error_message)
-        raise HTTPException(status_code=503, detail=error_message)
-
-    logger.info(f"type(app.state.model_fast)={app.state.model_fast}")
-    logger.info(f"type(app.state.recipe_processed)={app.state.recipe_processed}")
-    result = find_recipie_with_similar_elements_model_fast(
-        query=query,
-        model_fast=app.state.model_fast,
-        recipe_processed=app.state.recipe_processed
-    )
-
-    suggestions = []
-    for index, row in result.iterrows():
-        suggestions.append(
-            [
-                index,
-                row['name'],
-                f"https://www.food.com/recipe/*-{index}"
-             ]
-            )
-
-    logger.info(f"model_w2vec_similar_to_recipe(query={query}) -> {suggestions}")
-
-    return {
-        'query': query,
-        'suggestions': suggestions
-    } """
-
 try:
     app.state.recipes_with_vectors_tags, app.state.word2vec_model_tags = W2V_model.preprocess_data(pd.DataFrame(), 'tags')
     app.state.knn_model_tags = W2V_model.instantiate_model(app.state.recipes_with_vectors_tags, 'tags')
@@ -75,14 +38,43 @@ except Exception as e:
     logger.error(f"An error occurred while loading the model: {e}", exc_info=True)
 
 
+
+class RecipeSuggestion(BaseModel):
+    index: int = Field(..., description="The unique identifier for the suggested recipe.")
+    name: str = Field(..., description="The name of the suggested recipe.")
+    url: str = Field(..., description="The URL to view the suggested recipe.")
+
+class RecipeResponse(BaseModel):
+    query: str = Field(..., description="The query that was used to find similar recipes.")
+    suggestions: List[RecipeSuggestion] = Field(
+        ...,
+        description="A list of suggested recipes based on the query.",
+        example=[
+            {
+                "index": 320948,
+                "name": "GRUESOME MONSTER TOES",
+                "url": "https://www.food.com/recipe/*-320948"
+            }
+        ]
+    )
+
+
 # http://localhost:8000/model_w2vec_similar_to_recipe?recipe_id=20374
 # https://recettes-et-sentiments-api-p4x6pl7fiq-ew.a.run.app/model_w2vec_similar_to_recipe?recipe_id=331985
 @app.get("/model_w2vec_similar_to_recipe")
-def model_fast(recipe_id:int):
+def model_fast(recipe_id:int = Query(..., description="ID of an existing recipe from food.com"))->RecipeResponse:
+    """
+    Find recipes that are similar to an existing recipe of id recipe_id
 
+    This method uses W2VEC model trained on tags of recipes (dataset kaggle built on food.com)
+
+    - **query**: A string containing the ingredients separated by spaces.
+    - **returns**: A list of suggested recipes with their names and URLs.
+    """
     logger.info(f"model_w2vec_similar_to_recipe(recipe_id={recipe_id})")
-    suggestions = []
     try:
+        suggestions = []
+
         recommended_recipes = W2V_model.recommend_recipe_from_another(
             app.state.knn_model_col_concat,
             app.state.recipes_with_vectors_col_concat,
@@ -92,131 +84,163 @@ def model_fast(recipe_id:int):
 
         for index, row in recommended_recipes.iterrows():
             suggestions.append(
-                [
-                    index,
-                    row['name'],
-                    f"https://www.food.com/recipe/*-{index}"
-                ]
+                 RecipeSuggestion(
+                    index=index,
+                    name=row['name'],
+                    url=f"https://www.food.com/recipe/*-{index}"
                 )
+            )
     except KeyError as key_error:
         error_message = f"The recipe_id={recipe_id} has not been found"
         logger.error(error_message, key_error)
         raise HTTPException(status_code=404, detail=error_message)
-
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
     logger.info(f"model_w2vec_similar_to_recipe(recipe_id={recipe_id}) -> {suggestions}")
-    return {
-        'query': recipe_id,
-        'suggestions':suggestions
-    }
+    return RecipeResponse(
+            query=str(recipe_id),
+            suggestions=suggestions
+        )
 
 
 
 # http://localhost:8000/model_w2vec_query_recipe_with_tags?query=christmas%20gifts%20chocolate%20healthy
 # https://recettes-et-sentiments-api-p4x6pl7fiq-ew.a.run.app/model_w2vec_query_recipe_with_tags?query=christmas%20gifts%20chocolate%20healthy
 @app.get("/model_w2vec_query_recipe_with_tags")
-def model_fast(query:str):
+def model_fast(query:str = Query(..., description="Tags query string",min_length=3, max_length=300))->RecipeResponse:
+    """
+    Find recipes based on the tags provided in the query string.
+
+    This method uses W2VEC model trained on tags of recipes (dataset kaggle built on food.com)
+
+    - **query**: A string containing the ingredients separated by spaces.
+    - **returns**: A list of suggested recipes with their names and URLs.
+    """
     # in real world, we would check the input
     logger.info(f"model_w2vec_query_recipe_with_tags(query={query})")
 
+    try:
 
-    recommended_recipe_custom = W2V_model.recommend_recipe_from_custom_input(
-        app.state.word2vec_model_tags,
-        app.state.knn_model_tags,
-        app.state.recipes_with_vectors_tags,
-        query.split()
-        )
-
-
-
-    suggestions = []
-    for index, row in recommended_recipe_custom.iterrows():
-        suggestions.append(
-            [
-                index,
-                row['name'],
-                f"https://www.food.com/recipe/*-{index}"
-             ]
+        recommended_recipe_custom = W2V_model.recommend_recipe_from_custom_input(
+            app.state.word2vec_model_tags,
+            app.state.knn_model_tags,
+            app.state.recipes_with_vectors_tags,
+            query.split()
             )
 
-    logger.info(f"model_w2vec_query_recipe_with_tags(query={query}) -> {suggestions}")
 
-    return {
-        'query': query,
-        'suggestions': suggestions
-    }
+
+        suggestions = []
+        for index, row in recommended_recipe_custom.iterrows():
+            suggestions.append(
+                 RecipeSuggestion(
+                    index=index,
+                    name=row['name'],
+                    url=f"https://www.food.com/recipe/*-{index}"
+                )
+            )
+
+        logger.info(f"model_w2vec_query_recipe_with_tags(query={query}) -> {suggestions}")
+
+        return RecipeResponse(
+            query=query,
+            suggestions=suggestions
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # http://localhost:8000/model_w2vec_query_recipe_with_tags?query=christmas%20gifts%20chocolate%20healthy
 # https://recettes-et-sentiments-api-p4x6pl7fiq-ew.a.run.app/model_w2vec_query_recipe_with_tags?query=christmas%20gifts%20chocolate%20healthy
 @app.get("/model_w2vec_query_recipe_with_ingredients")
-def model_fast(query:str):
-    # in real world, we would check the input
+def model_fast(query:str = Query(..., description="Ingredients query string",min_length=3, max_length=300))->RecipeResponse:
+    """
+    Find recipes based on the ingredients provided in the query string.
+
+    This method uses W2VEC model trained on tags of recipes (dataset kaggle built on food.com)
+
+    - **query**: A string containing the ingredients separated by spaces.
+    - **returns**: A list of suggested recipes with their names and URLs.
+    """
     logger.info(f"model_w2vec_query_recipe_with_ingredients(query={query})")
 
+    try:
 
-    recommended_recipe_custom = W2V_model.recommend_recipe_from_custom_input(
-        app.state.word2vec_model_ingredients,
-        app.state.knn_model_ingredients,
-        app.state.recipes_with_vectors_ingredients,
-        query.split()
-        )
-
-
-
-    suggestions = []
-    for index, row in recommended_recipe_custom.iterrows():
-        suggestions.append(
-            [
-                index,
-                row['name'],
-                f"https://www.food.com/recipe/*-{index}"
-             ]
+        recommended_recipe_custom = W2V_model.recommend_recipe_from_custom_input(
+            app.state.word2vec_model_ingredients,
+            app.state.knn_model_ingredients,
+            app.state.recipes_with_vectors_ingredients,
+            query.split()
             )
 
-    logger.info(f"model_w2vec_query_recipe_with_ingredients(query={query}) -> {suggestions}")
 
-    return {
-        'query': query,
-        'suggestions': suggestions
-    }
+
+        suggestions = []
+        for index, row in recommended_recipe_custom.iterrows():
+            suggestions.append(
+                 RecipeSuggestion(
+                    index=index,
+                    name=row['name'],
+                    url=f"https://www.food.com/recipe/*-{index}"
+                )
+            )
+
+        logger.info(f"model_w2vec_query_recipe_with_ingredients(query={query}) -> {suggestions}")
+
+        return RecipeResponse(
+            query=query,
+            suggestions=suggestions
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 
 # http://localhost:8000/model_w2vec_query_recipe_with_tags_and_ingredients?query=christmas%20gifts%20chocolate%20healthy
 # https://recettes-et-sentiments-api-p4x6pl7fiq-ew.a.run.app/model_w2vec_query_recipe_with_tags_and_ingredients?query=christmas%20gifts%20chocolate%20healthy
 @app.get("/model_w2vec_query_recipe_with_tags_and_ingredients")
-def model_fast(query:str):
-    # in real world, we would check the input
+def model_fast(query:str = Query(..., description="Ingrédients or Tags query string",min_length=3, max_length=300))->RecipeResponse:
+    """
+    Find recipes based on the ingredients or tags provided in the query string.
+
+    This method uses W2VEC model trained on tags of recipes (dataset kaggle built on food.com)
+
+    - **query**: A string containing the ingredients separated by spaces.
+    - **returns**: A list of suggested recipes with their names and URLs.
+    """
     logger.info(f"model_w2vec_query_recipe_with_tags_and_ingredients(query={query})")
 
+    try:
 
-    recommended_recipe_custom = W2V_model.recommend_recipe_from_custom_input(
-        app.state.word2vec_model_col_concat,
-        app.state.knn_model_col_concat,
-        app.state.recipes_with_vectors_col_concat,
-        query.split()
-        )
-
-
-
-    suggestions = []
-    for index, row in recommended_recipe_custom.iterrows():
-        suggestions.append(
-            [
-                index,
-                row['name'],
-                f"https://www.food.com/recipe/*-{index}"
-             ]
+        recommended_recipe_custom = W2V_model.recommend_recipe_from_custom_input(
+            app.state.word2vec_model_col_concat,
+            app.state.knn_model_col_concat,
+            app.state.recipes_with_vectors_col_concat,
+            query.split()
             )
 
-    logger.info(f"model_w2vec_query_recipe_with_tags_and_ingredients(query={query}) -> {suggestions}")
 
-    return {
-        'query': query,
-        'suggestions': suggestions
-    }
+
+        suggestions = []
+        for index, row in recommended_recipe_custom.iterrows():
+            suggestions.append(
+                 RecipeSuggestion(
+                    index=index,
+                    name=row['name'],
+                    url=f"https://www.food.com/recipe/*-{index}"
+                )
+            )
+
+        logger.info(f"model_w2vec_query_recipe_with_tags_and_ingredients(query={query}) -> {suggestions}")
+
+        return {
+            'query': query,
+            'suggestions': suggestions
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/")
