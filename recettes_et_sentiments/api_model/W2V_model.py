@@ -123,24 +123,3 @@ def recommend_recipe_from_custom_input(W2V_model: Word2Vec,
 
     return pd.DataFrame(data.iloc[indices[0]])
 
-
-if __name__ == "__main__":
-
-    data = pd.read_parquet('final_preproc_with_ingredients.parquet')
-    column_to_train= 'col_concat'
-    data['ingredients'] = [list(row) for row in data['ingredients']]
-    data['tags'] = [list(row) for row in data['tags']]
-    data[column_to_train] = data['ingredients'] + data['tags']
-
-    print("from recipe id 308080")
-    recipes_with_vectors, word2vec_model = preprocess_data(data, column_to_train)
-    print('preprocess done')
-    KNN_model = instantiate_model(recipes_with_vectors, column_to_train)
-    recommended_recipe = recommend_recipe_from_another(KNN_model, recipes_with_vectors, column_to_train, entry_recipe_id=308081)
-
-    print(recommended_recipe)
-
-    print("from recipe tags 'christmas', 'gifts', 'chocolate', 'healthy'")
-    recommended_recipe_custom = recommend_recipe_from_custom_input(word2vec_model, KNN_model, recipes_with_vectors, ['rosh hashanah', 'gifts', 'chocolate'])
-
-    print(recommended_recipe_custom)
