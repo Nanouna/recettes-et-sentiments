@@ -19,6 +19,7 @@ for FILE in $FILE_NAMES; do
     DESTINATION="${BASE_FOLDER}/${FILE}"
 
     # Télécharger le fichier en utilisant wget
+    echo wget -q -O "$DESTINATION" "$FILE_URL"
     wget -q -O "$DESTINATION" "$FILE_URL"
 
     # Vérifier si le fichier a été téléchargé avec succès

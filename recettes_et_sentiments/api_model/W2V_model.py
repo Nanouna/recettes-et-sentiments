@@ -71,6 +71,7 @@ def preprocess_data(data: pd.DataFrame, column_to_process: str)-> typing.Union[p
         data = pd.read_parquet(word2vec_df_cache_path)
     else:
         data[column_to_process+'_vector'] = embedding(word2vec_model, data[column_to_process].tolist())
+        #probleme de to_parquet sous windows, pas sous linux ou mac.
         data[column_to_process+'_vector'] = [np.array(liste, dtype=np.float32) for liste in data[column_to_process+'_vector']]
         data.to_parquet(word2vec_df_cache_path)
 
@@ -121,3 +122,4 @@ def recommend_recipe_from_custom_input(W2V_model: Word2Vec,
                                               )
 
     return pd.DataFrame(data.iloc[indices[0]])
+
