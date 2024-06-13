@@ -21,9 +21,10 @@ nltk.download('wordnet')
 nltk.download('omw-1.4')
 nltk.download('averaged_perceptron_tagger')
 
-
+# generic stop words used in preprocessing
 STOP_WORDS = set(stopwords.words('english'))
 
+# additionnal custom stop words used in preprocessing for recipe
 RECIPE_STOPWORDS = ['minute', 'le',
                     'ingredient','preparation','dish','add',
                     'course','top','hour','combine',
@@ -37,7 +38,7 @@ RECIPE_STOPWORDS = ['minute', 'le',
                     'using','cooked','tablespoon','turn',
                     '°f', '°c', '½re','½s'
                      ]
-
+# additionnal custom stop words used in preprocessing for tags
 TAGS_STOPWORDS = ['60-minutes-or-less','30-minutes-or-less',
                   '15-minutes-or-less','time-to-make',
                   'preparation', 'course', 'main-ingredient',
@@ -46,7 +47,7 @@ TAGS_STOPWORDS = ['60-minutes-or-less','30-minutes-or-less',
                   'Throw the ultimate fiesta with this sopaipillas recipe from Food.com.',
                   'less_thansql:name_topics_of_recipegreater_than','main ingredient'
                   ]
-
+# replacement of tags to correct typo and similar tags
 TAGS_REPLACEMENTS = {'eggs breakfast':'breakfast eggs',
                     'for large groups holiday event':'for large groups',
                     'healthy 2':'healthy',
@@ -62,13 +63,15 @@ TAGS_REPLACEMENTS = {'eggs breakfast':'breakfast eggs',
                     'super bowl':'superbowl',
                     'for-large-groups':'test'
                     }
-
+# list of columns on which text preprocessing will be applied
 RECIPE_COLUMNS_FOR_TEXT_PREPROC = [
         'name',
         'description',
         'merged_steps',
         'merged_ingredients'
     ]
+
+# list of columns on which numeric preprocessing will be applied
 RECIPE_COLUMNS_FOR_NUMERIC_PREPROC = [
         'minutes',
         'calories',
@@ -79,21 +82,28 @@ RECIPE_COLUMNS_FOR_NUMERIC_PREPROC = [
         'saturated_fat_pdv',
         'carbohydrates_pdv']
 
-
+# setting to normalise the number of minutes per recipe
+# any recipe with 'minutes' lower than this value will be set to MINUTES_CLIP_LOWER
 MINUTES_CLIP_LOWER=5
+# any recipe with 'minutes' greater than this value will be set to MINUTES_CLIP_UPPER
 MINUTES_CLIP_UPPER=130
 
+# setting to normalise the number of steps per recipe
+# any recipe with 'steps' lower than this value will be set to N_STEPS_CLIP_LOWER
 N_STEPS_CLIP_LOWER=0
+# any recipe with 'steps' higher than this value will be set to N_STEPS_CLIP_UPPER
 N_STEPS_CLIP_UPPER=40
 
+# parameters to train W2V model
 W2V_VECTOR_SIZE = 100
 W2V_WINDOW = 5
 W2V_MIN_COUNT = 1
 
-
+# number of similar recipe to return
+# the actual number of recipe return is KNN_N_NEIGHBORS - 1
 KNN_N_NEIGHBORS = 6 # should not be inferior to 2. 1 would return itself
 
-
+# ingredients preprocessing : replace some ingredient by simpler values
 REPLACE_INGREDIENT = {'acorn squash':'acorn squash',
     'active dry yeast':'active dry yeast',
     'adobo seasoning':'adobo sauce',

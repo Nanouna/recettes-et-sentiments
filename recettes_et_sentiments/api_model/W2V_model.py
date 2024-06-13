@@ -115,6 +115,11 @@ def recommend_recipe_from_custom_input(W2V_model: Word2Vec,
                                        data: pd.DataFrame,
                                        custom_input: list
                                        ) -> pd.DataFrame:
+
+    """
+    vectorize the custom input (list of strings (words))
+    use a KNN model to determine the N closest NEIGHBORS
+    """
     vectors = pd.DataFrame(embed_sentence(W2V_model, custom_input)).T
     logger.info(f"Looking for recommendation based on curstom input {custom_input}")
     distances, indices = KNN_model.kneighbors(vectors,
@@ -125,7 +130,9 @@ def recommend_recipe_from_custom_input(W2V_model: Word2Vec,
 
 
 if __name__ == "__main__":
-
+    """
+    test the model locally
+    """
     data = pd.read_parquet('final_preproc_with_ingredients.parquet')
     column_to_train= 'col_concat'
     data['ingredients'] = [list(row) for row in data['ingredients']]

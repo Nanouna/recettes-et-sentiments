@@ -20,6 +20,28 @@ from recettes_et_sentiments.api_model import rs_data, registry
 
 logger = logging.getLogger(__name__)
 
+"""
+This model predict recipes based on free user text imput.
+It searches similar models based on food.com dataset of 230k recipes, and use the text from
+* name of recipe
+* description
+* tags
+* steps
+* ingredients
+
+This model works well, but there's an issue if you try to integrate it in fast.py, the joblib.load() fails to
+load the pipeline, and return a numpy ndarray instead of sklear pipeline.
+
+class CustomUnpickler(pickle.Unpickler):
+    def find_class(self, module, name):
+        if name == 'FastVectorizer':
+            from recettes_et_sentiments.api_model.FAST_model_variant import FastVectorizer
+            return FastVectorizer
+        return super().find_class(module, name)
+"""
+
+
+
 class FastVectorizer(BaseEstimator, TransformerMixin):
     def __init__(self, vector_size=100, window=5, min_count=1, workers=4):
         self.vector_size = vector_size
@@ -54,7 +76,18 @@ def make_fast_preprocessor_pipeline(columns_to_merge_for_training:typing.List[st
                                 workers=4,
                                 cache=True
                                ) -> Pipeline:
+    """
+    build the pipeline with :
+    * basic text and numerical preprocessing
+    * column concatenation to merge all text in one column "merged_text"
+    * FastVectorizer : vectorize merged_text into a vector of size vector_size
+    * return the model unfitted
 
+    This pipeline involve caching at each intermediary steps to speed up the consecutive training processes.
+    Make sure you have a /tmp/data folder
+    and clear the folder if you change the preprocessing code.
+
+    """
     vectorizer = FastVectorizer(vector_size=vector_size, window=window, min_count=min_count, workers=workers)
 
     basic_preproc = BasicPreprocessing()
@@ -89,8 +122,12 @@ def make_fast_preprocessor_pipeline(columns_to_merge_for_training:typing.List[st
     return preprocessing_pipeline
 
 
-def find_recipie_with_similar_elements_model_fast(query:str, model_fast, recipe_processed, vector_size):
+def find_recipie_with_similar_elements_model_fast(query:str, model_fast, recipe_processed, vector_size)->typing.List[int]:
+    """
+    Vectorize the query string using the trained pipeline
+    make a cosine_similarity search to retrieve the top 5 similar recipe ids
 
+    """
     ingredients_vector = model_fast.named_steps['vectorize_and_combine'].named_transformers_['text']._get_mean_vector(query).reshape(1, -1)
 
     # dataframe is 'vector_size' columns, then the reciepes columns (with Timestamp,string etc...)
@@ -108,6 +145,10 @@ def find_recipie_with_similar_elements_model_fast(query:str, model_fast, recipe_
 
 
 if __name__ == "__main__":
+
+    """
+    This part of the code instanciate the pipeline, train it, and save the model
+    """
 
     # train_size = int(recipe_df_ori.shape[0] * 0.8)
     # train_recipe_df = recipe_df_ori.iloc[0:train_size]

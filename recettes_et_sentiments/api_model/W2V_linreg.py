@@ -12,6 +12,9 @@ from recettes_et_sentiments.api_model.preprocessing_pipeline import CacheStep, B
 from recettes_et_sentiments.api_model import rs_data, preprocessing, preprocessing_pipeline
 
 class Word2VecVectorizer(BaseEstimator, TransformerMixin):
+    """
+    custom class to integrate Word2Vec Vectorizer into a pipeline
+    """
     def __init__(self, vector_size=100, window=5, min_count=1, workers=4):
         self.vector_size = vector_size
         self.window = window
@@ -46,6 +49,10 @@ def make_w2v_preprocessor_pipeline(columns_to_merge_for_training:typing.List[str
                                 cache=True
                                ) -> Pipeline:
 
+    """
+    build a pipeline to do basic preprpocessing, concat columns and text vectorization
+    return the pipeline not fitted
+    """
     vectorizer = Word2VecVectorizer(vector_size=vector_size, window=window, min_count=min_count, workers=workers)
 
     basic_preproc = BasicPreprocessing()
@@ -79,7 +86,14 @@ def make_w2v_preprocessor_pipeline(columns_to_merge_for_training:typing.List[str
 
 
 if __name__ == "__main__":
+    """
+        Instanciate and train the pipeline
+        then apply a cross validation with a linear regression to try to predict
+        the ratings from users of food.com based on the recipe details
 
+        This fails with a test score around -5.31 with vector size of 100
+        2000 the model fails to traing with 364GB of memory available (64GB+300GB of Swap)
+    """
     from sklearn.model_selection import cross_validate
     from sklearn.linear_model import LinearRegression
 
