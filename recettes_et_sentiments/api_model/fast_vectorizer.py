@@ -6,6 +6,13 @@ import logging
 from sklearn.base import BaseEstimator, TransformerMixin
 from gensim.models import FastText
 
+
+from skl2onnx.common.data_types import FloatTensorType
+from skl2onnx.common._apply_operation import apply_identity
+from skl2onnx import update_registered_converter
+
+from recettes_et_sentiments.api_model.preprocessing_pipeline import get_onnx_type
+
 logger = logging.getLogger(__name__)
 
 
@@ -17,7 +24,7 @@ class FastVectorizer(BaseEstimator, TransformerMixin):
         self.workers = workers
         self.model = None
         self.input_feature_name = None
-        self.columns_out = None
+        self.feature_names_out_ = None
 
 
     def fit(self, X, y=None):
@@ -25,15 +32,18 @@ class FastVectorizer(BaseEstimator, TransformerMixin):
         self.model = FastText(sentences, vector_size=self.vector_size, window=self.window, min_count=self.min_count, workers=self.workers)
         self.input_feature_name = X.name if hasattr(X, 'name') else 'merged_text'
 
-        self.columns_out = [f"{self.input_feature_name}_vec_{i}" for i in range(self.vector_size)]
+        original_columns = X.columns.tolist() if hasattr(X, 'columns') else []
+        self.feature_names_out_ = original_columns + ['merged_text_vector']
 
         return self
 
     def transform(self, X):
         vectors = np.array([self._get_mean_vector(text) for text in X])
 
-        # Create a DataFrame with proper column names
-        return pd.DataFrame(vectors, columns=self.get_feature_names_out())
+        X_transformed = X.copy()
+        X_transformed['merged_text_vector'] = vectors
+
+        return X_transformed
 
     def _get_mean_vector(self, text):
         words = text.split()  # Utiliser les mots déjà prétraités
@@ -45,13 +55,35 @@ class FastVectorizer(BaseEstimator, TransformerMixin):
 
     def get_feature_names_out(self, input_features=None):
 
-        if self.columns_out is None:
+        if self.feature_names_out_ is None:
             raise AttributeError("Transformer has not been fitted yet.")
 
-        logger.info(f"FastVectorizer.get_feature_names_out(input_features={input_features}) -> {self.columns_out}")
+        logger.info(f"FastVectorizer.get_feature_names_out(input_features={input_features}) -> {self.feature_names_out_}")
 
-        return self.columns_out
+        return self.feature_names_out_
 
+
+def fast_vectorizer_shape_calculator(operator):
+    input = operator.inputs[0]
+    N = input.type.shape[0]  # Batch size
+    vector_size = operator.raw_operator.vector_size  # Number of features (vector size)
+
+    # Directly set the output type to FloatTensorType with the vector size
+    operator.outputs[0].type = FloatTensorType([N, vector_size])
+
+
+
+
+
+def fast_vectorizer_converter(scope, operator, container):
+    input_name = operator.inputs[0].full_name
+    output_name = operator.outputs[0].full_name
+    apply_identity(scope, input_name, output_name, container)
+
+update_registered_converter(
+    FastVectorizer, "FastVectorizer",
+    fast_vectorizer_shape_calculator, fast_vectorizer_converter
+)
 
 
 class CustomUnpickler(pickle.Unpickler):

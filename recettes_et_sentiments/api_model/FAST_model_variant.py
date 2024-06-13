@@ -71,9 +71,7 @@ def make_fast_preprocessor_pipeline(columns_to_merge_for_training:typing.List[st
     preprocessing_pipeline = Pipeline(steps=[
         ('basic_preproc', basic_preproc),
         ('concat_columns', concat_columns),
-        ('vectorize_and_combine', column_transformer),
-        ('rename_columns', rename_transformer)
-
+        ('vectorize_and_combine', vectorizer)
     ])
 
     return preprocessing_pipeline

@@ -8,7 +8,28 @@ from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 
+from skl2onnx.common._apply_operation import apply_identity
+from skl2onnx import update_registered_converter
+
 from recettes_et_sentiments.api_model import preprocessing
+
+from skl2onnx.common.data_types import FloatTensorType, Int64TensorType, StringTensorType
+from skl2onnx.common.data_types import BooleanTensorType
+import numpy as np
+
+def get_onnx_type(dtype):
+    if np.issubdtype(dtype, np.floating):
+        return FloatTensorType
+    elif np.issubdtype(dtype, np.integer):
+        return Int64TensorType
+    elif np.issubdtype(dtype, np.bool_):
+        return BooleanTensorType
+    elif np.issubdtype(dtype, np.str_):
+        return StringTensorType
+    else:
+        raise ValueError(f"Unsupported dtype: {dtype}")
+
+
 
 logger = logging.getLogger(__name__)
 
@@ -58,8 +79,27 @@ class BasicPreprocessing(BaseEstimator, TransformerMixin):
 
         logger.info(f"BasicPreprocessing.get_feature_names_out(input_features={input_features}) -> {self.feature_names_out_}")
 
-        return self.feature_names_out_
+        return self.feature_names_out_BasicPreprocessing
 
+def basic_preprocessing_shape_calculator(operator):
+    input = operator.inputs[0]
+    N = input.type.shape[0]  # Batch size
+
+    # Copy the input types directly
+    operator.outputs[0].type = input.type
+
+
+
+
+def basic_preprocessing_converter(scope, operator, container):
+    input_name = operator.inputs[0].full_name
+    output_name = operator.outputs[0].full_name
+    apply_identity(scope, input_name, output_name, container)
+
+update_registered_converter(
+    BasicPreprocessing, "BasicPreprocessing",
+    basic_preprocessing_shape_calculator, basic_preprocessing_converter
+)
 
 
 class ConcatColumns(BaseEstimator, TransformerMixin):
@@ -71,7 +111,7 @@ class ConcatColumns(BaseEstimator, TransformerMixin):
     """
     def __init__(self, columns, dropSourceColumn=True):
         self.columns = columns
-        self.columns_out = None
+        self.feature_names_out_ = None
         self.dropSourceColumn = dropSourceColumn
 
     def fit(self, X, y=None):
@@ -81,34 +121,51 @@ class ConcatColumns(BaseEstimator, TransformerMixin):
             remaining_columns = [col for col in X.columns if col not in self.columns]
         else:
             remaining_columns = list(X.columns)
-        self.columns_out = remaining_columns + ['merged_text']
+        self.feature_names_out_ = remaining_columns + ['merged_text']
 
         return self
 
     def transform(self, X):
         logger.info("Transforming data with ConcatColumns")
         value = preprocessing.concat_columns(X.copy(), self.columns, self.dropSourceColumn)
-        logger.info(f"ConcatColumns - list of column names :  {value.colums}")
-        self.columns_out=value.colums
+        logger.info(f"ConcatColumns - list of column names :  {value.columns}")
+        self.feature_names_out_=value.columns
         return value
 
     def get_feature_names_out(self, input_features=None):
-        if self.columns_out is None:
+        if self.feature_names_out_ is None:
             raise AttributeError("Transformer has not been fitted yet.")
 
-        logger.info(f"ConcatColumns.get_feature_names_out(input_features={input_features}) -> {self.columns_out}")
+        logger.info(f"ConcatColumns.get_feature_names_out(input_features={input_features}) -> {self.feature_names_out_}")
 
-        return self.columns_out
+        return self.feature_names_out_
+
+def concat_columns_shape_calculator(operator):
+    input = operator.inputs[0]
+    N = input.type.shape[0]  # Batch size
+
+    # Copy the input types directly
+    operator.outputs[0].type = input.type
 
 
 
+
+def concat_columns_converter(scope, operator, container):
+    input_name = operator.inputs[0].full_name
+    output_name = operator.outputs[0].full_name
+    apply_identity(scope, input_name, output_name, container)
+
+update_registered_converter(
+    ConcatColumns, "ConcatColumns",
+    concat_columns_shape_calculator, concat_columns_converter
+)
 
 
 class CacheStep(BaseEstimator, TransformerMixin):
     def __init__(self, filename, step_func):
         self.filename = filename
         self.step_func = step_func
-        self.columns_out = None
+        self.feature_names_out_ = None
         self.cached_df = load_from_parquet(filename)
 
     def fit(self, X, y=None):
@@ -118,29 +175,50 @@ class CacheStep(BaseEstimator, TransformerMixin):
             logger.info(f"FIT : No cached data available for {self.filename}, fitting step")
             self.step_func.fit(X, y)
 
-        self.columns_out = X.columns
+        self.feature_names_out_ = X.columns
 
         return self
 
     def transform(self, X):
         if self.cached_df is not None:
             logger.info(f"Transform : Using cached data from {self.filename}")
-            self.columns_out = self.cached_df.columns
+            self.feature_names_out_ = self.cached_df.columns
             return self.cached_df
         else:
             logger.info(f"Transforming data and saving to {self.filename}")
             transformed_X = self.step_func.transform(X)
             save_to_parquet(transformed_X, self.filename)
-            self.columns_out = transformed_X.columns
+            self.feature_names_out_ = transformed_X.columns
             return transformed_X
 
     def get_feature_names_out(self, input_features=None):
-        if self.columns_out is None:
+        if self.feature_names_out_ is None:
             raise AttributeError("Transformer has not been fitted yet.")
 
-        logger.info(f"CacheStep.get_feature_names_out(input_features={input_features}) -> {self.columns_out}")
+        logger.info(f"CacheStep.get_feature_names_out(input_features={input_features}) -> {self.feature_names_out_}")
 
-        return self.columns_out
+        return self.feature_names_out_
+
+
+
+# Define custom shape calculator
+def cache_step_shape_calculator(operator):
+    input = operator.inputs[0]
+    operator.outputs[0].type = input.type.__class__([input.type.shape[0], len(input.type.shape)])
+
+# Define custom converter
+def cache_step_converter(scope, operator, container):
+    input_name = operator.inputs[0].full_name
+    output_name = operator.outputs[0].full_name
+    apply_identity(scope, input_name, output_name, container)
+
+# Register the custom converter and shape calculator
+
+
+update_registered_converter(
+    CacheStep, "CacheStep",
+    cache_step_shape_calculator, cache_step_converter
+)
 
 
 
