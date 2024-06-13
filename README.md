@@ -33,7 +33,6 @@ The first goal is to predict the the user review score from the recipe descripti
 
 The second goal is to recommend some recipes, first based on a recipe proximity, then based on a user prompt.
 
-The third goal is to generate a brand new receipes from a list of key ingredients.
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## Setup
@@ -141,9 +140,9 @@ Text preprocessing
   - Using Word2Vec, where we create a vector(100,) per word and then compute the average vector so that it represents the recipe. Doing so it results in a much lower dataset.
     However, running a cross_validate(r2) gives a test_score of -5.1329
 
-## Conclusion
+__Conclusion__
 
-  We were note able to explain the average score given by Food.com users to recipes from the name, description & ingredients using ML or Deep Learning.
+  We were not able to explain the average score given by Food.com users to recipes from the name, description & ingredients using ML or Deep Learning.
 
   It was challenging anyway with scores 1,2,3 stars representing altogether only 6% of to users ratings, and it's even less considering that the 5.37% of 0 star rating (people didn't rate the recipe but left a comment)
 
@@ -162,8 +161,58 @@ We could have spent more time on the dataset and model, but we felt it was unlik
 
 ### 2. Recipe recommendation
 
-### 3. Recipe generation
+This project focuses on developing a machine learning-based recommendation system for recipes using data from Food.com. The system aims to provide users with personalized recipe recommendations based on their preferences. The data from Food.com presents several challenges that we have addressed to build a robust and effective recommendation system.
 
+__Challenges with the Dataset__
+
+The dataset from Food.com is not standardized and contains various issues, such as:
+
+Textual Data with Errors: The dataset includes a significant number of spelling mistakes, typos, and improper grammar.
+Proper Nouns and Brands: Many ingredients are listed with brand names or as proprietary products, complicating the normalization process.
+Transformed Products and Irrelevant Information: The dataset contains references to already prepared or packaged products and other irrelevant details that do not contribute to recipe preparation.
+Plurality and Variations of Ingredients: Ingredients appear in multiple forms and variations, making it challenging to consolidate them.
+
+__Use Cases__
+
+The recommendation system addresses several use cases:
+
+Slight Variation of a Liked Recipe: Users can find recipes similar to one they like but with slight variations.
+Ingredient-Based Recipe Search: Users can search for recipes based on specific ingredients they have.
+Theme and Category-Based Search: Users can find recipes based on themes (e.g., holiday recipes) and categories (e.g., desserts).
+Combined Search Criteria: Users can search for recipes based on a combination of themes, categories, and specific ingredients.
+
+__Data Selection__
+
+Data selection was driven by the need to address the use cases effectively. We focused on:
+
+Cleaning and normalizing ingredient lists to handle variations and brand names.
+Selecting relevant tags and categories for thematic and categorical searches.
+Filtering out irrelevant and redundant information to streamline the dataset for the recommendation algorithm.
+
+__Data Preparation__
+
+Data preparation involved several critical steps:
+
+Preprocessing:
+Implemented a term frequency-inverse document frequency (TF-IDF) model to pre-classify ingredients, reducing their number before manual review.
+Conducted a manual review of tags to ensure relevance and accuracy.
+NLP Preprocessing:
+Standard NLP preprocessing techniques were applied, including tokenization, stop-word removal, stemming, and lemmatization, to prepare textual data for modeling.
+
+__Models__
+
+The recommendation system utilizes the following models:
+
+- Word2Vec:
+We used Word2Vec to vectorize textual columns in the dataset. This allowed us to capture the semantic relationships between words and ingredients effectively.
+- K-Nearest Neighbors (KNN):
+After vectorizing the data with Word2Vec, we applied a KNN algorithm to build the recommendation engine. KNN helped in finding recipes that are similar based on the input criteria, be it ingredients, themes, or categories.
+
+__Conclusion__
+
+This recipe recommendation system leverages advanced NLP techniques and machine learning algorithms to provide personalized recipe suggestions. By addressing the challenges in the dataset and focusing on relevant use cases, the system aims to enhance the user's culinary experience with tailored recipe recommendations.
+
+Feel free to explore the code and contribute to improving the system further!
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 <!-- LICENSE -->
